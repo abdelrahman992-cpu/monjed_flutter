@@ -6,6 +6,10 @@ class RiskRepository {
 
   RiskRepository({required this.apiService});
 
+  // =========================
+  // Flood Risk
+  // =========================
+
   Future<RiskAssessment> calculateFloodRisk({
     required String zoneId,
     required double rainfall1hMm,
@@ -21,6 +25,35 @@ class RiskRepository {
         'rainfall_24h_mm': rainfall24hMm,
         'previous_rainfall_24h_mm': previousRainfall24hMm,
         'data_age_minutes': dataAgeMinutes,
+      },
+    );
+
+    return RiskAssessment.fromJson(
+      Map<String, dynamic>.from(response),
+    );
+  }
+
+  // =========================
+  // Earthquake Risk
+  // =========================
+
+  Future<RiskAssessment> calculateEarthquakeRisk({
+    required String zoneId,
+    required double magnitude,
+    required double depthKm,
+    required double distanceKm,
+    int dataAgeMinutes = 0,
+    bool sourceVerified = true,
+  }) async {
+    final response = await apiService.post(
+      '/risk/earthquake',
+      body: {
+        'zone_id': zoneId,
+        'magnitude': magnitude,
+        'depth_km': depthKm,
+        'distance_km': distanceKm,
+        'data_age_minutes': dataAgeMinutes,
+        'source_verified': sourceVerified,
       },
     );
 
