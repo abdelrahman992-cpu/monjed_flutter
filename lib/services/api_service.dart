@@ -2,11 +2,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 class ApiService {
-  final String baseUrl;
-
-  ApiService({
-    required this.baseUrl,
-  });
+  static const String baseUrl = 'http://127.0.0.1:8000';
 
   Future<dynamic> get(String endpoint) async {
     final response = await http.get(
@@ -16,35 +12,35 @@ class ApiService {
       },
     );
 
-    if (response.statusCode >= 200 &&
-        response.statusCode < 300) {
-      return jsonDecode(response.body);
-    }
-
-    throw Exception(
-      'API Error: ${response.statusCode}',
-    );
+    return _handleResponse(response);
   }
 
   Future<dynamic> post(
-    String endpoint,
-    Map<String, dynamic> data,
-  ) async {
+    String endpoint, {
+    Map<String, dynamic>? body,
+  }) async {
     final response = await http.post(
       Uri.parse('$baseUrl$endpoint'),
       headers: {
         'Content-Type': 'application/json',
       },
-      body: jsonEncode(data),
+      body: body != null ? jsonEncode(body) : null,
     );
 
-    if (response.statusCode >= 200 &&
-        response.statusCode < 300) {
-      return jsonDecode(response.body);
+    return _handleResponse(response);
+  }
+
+  dynamic _handleResponse(http.Response response) {
+    final data = response.body.isNotEmpty
+        ? jsonDecode(response.body)
+        : null;
+
+    if (response.statusCode >= 200 && response.statusCode < 300) {
+      return data;
     }
 
     throw Exception(
-      'API Error: ${response.statusCode}',
+      'API Error ${response.statusCode}: ${response.body}',
     );
   }
 }
