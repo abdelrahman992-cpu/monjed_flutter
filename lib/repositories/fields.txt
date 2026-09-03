@@ -1,0 +1,85 @@
+================ RISK ================
+
+FLOOD
+zoneId
+rainfall1hMm
+rainfall24hMm
+previousRainfall24hMm
+dataAgeMinutes
+
+EARTHQUAKE
+zoneId
+magnitude
+depthKm
+distanceKm
+dataAgeMinutes
+sourceVerified
+
+
+=========== COMMUNITY REPORTS ===========
+
+reportText
+zoneId
+location
+latitude
+longitude
+reporterId
+
+
+============== DECISION ==============
+
+hazard
+zoneId
+riskScore
+riskLevel
+confidence
+evidence[]
+
+
+============== VOLUNTEER ==============
+
+name
+zoneId
+latitude
+longitude
+available
+responderLevel
+vehicleType
+capacity
+skills[]
+
+
+========== ASSISTANCE REQUEST ==========
+
+zoneId
+location
+latitude
+longitude
+hazard
+requestType
+priority
+description
+
+
+============= ACCESSIBILITY =============
+
+accessibilityNeeds[]
+
+
+=============== DASHBOARD ===============
+
+overview
+risks
+decisions
+alerts
+zone
+recipientsCount
+
+
+================ USER =================
+
+userId
+phone
+country
+zone
+language
