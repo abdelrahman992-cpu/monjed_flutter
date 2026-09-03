@@ -1,5 +1,6 @@
 import '../models/risk_assessment.dart';
 import '../services/api_service.dart';
+import '../models/country_risk.dart';
 
 class RiskRepository {
   final ApiService apiService;
@@ -61,4 +62,16 @@ class RiskRepository {
       Map<String, dynamic>.from(response),
     );
   }
+Future<List<CountryRisk>> getDashboardRisks() async {
+  final response = await apiService.get('/dashboard/risks');
+
+  return (response as List)
+      .map(
+        (item) => CountryRisk.fromJson(
+          Map<String, dynamic>.from(item),
+        ),
+      )
+      .toList();
+}
+
 }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'views/home/landing_screen.dart';
+
+import 'routes/app_routes.dart';
 
 void main() {
   runApp(const MonjedApp());
@@ -13,13 +14,10 @@ class MonjedApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'MONJED',
-      theme: ThemeData(
-        brightness: Brightness.dark,
-        scaffoldBackgroundColor: const Color(0xFF081214),
-        fontFamily: 'Roboto',
-      ),
-      home: const LandingScreen(),
+
+      initialRoute: AppRoutes.home,
+
+      onGenerateRoute: AppRoutes.generateRoute,
     );
   }
 }
-

@@ -1,4 +1,4 @@
-
+import '../../routes/app_routes.dart';
 import 'dart:async';
 import 'dart:math' as math;
 
@@ -22,107 +22,7 @@ class _LandingScreenState extends State<LandingScreen>
 
   final ScrollController _scrollController = ScrollController();
 
-  final List<_CountryRisk> countries = const [
-    _CountryRisk(
-      code: 'MA',
-      name: 'Morocco',
-      flood: 'LOW',
-      earthquake: 'LOW',
-      floodScore: 24,
-      earthquakeScore: 18,
-      reasons: ['Low rainfall signal', 'No elevated flood trend'],
-    ),
-    _CountryRisk(
-      code: 'DZ',
-      name: 'Algeria',
-      flood: 'LOW',
-      earthquake: 'LOW',
-      floodScore: 22,
-      earthquakeScore: 27,
-      reasons: ['No elevated flood signal', 'Low earthquake activity'],
-    ),
-    _CountryRisk(
-      code: 'EG',
-      name: 'Egypt',
-      flood: 'MEDIUM',
-      earthquake: 'LOW',
-      floodScore: 48,
-      earthquakeScore: 21,
-      reasons: ['Localized rainfall signal', 'No major earthquake signal'],
-    ),
-    _CountryRisk(
-      code: 'SD',
-      name: 'Sudan',
-      flood: 'LOW',
-      earthquake: 'LOW',
-      floodScore: 29,
-      earthquakeScore: 16,
-      reasons: ['Low current rainfall signal', 'No elevated earthquake signal'],
-    ),
-    _CountryRisk(
-      code: 'ET',
-      name: 'Ethiopia',
-      flood: 'MEDIUM',
-      earthquake: 'MEDIUM',
-      floodScore: 51,
-      earthquakeScore: 54,
-      reasons: ['Rainfall activity detected', 'Recent seismic activity'],
-    ),
-    _CountryRisk(
-      code: 'SO',
-      name: 'Somalia',
-      flood: 'HIGH',
-      earthquake: 'LOW',
-      floodScore: 82,
-      earthquakeScore: 19,
-      reasons: ['High cumulative rainfall', 'Flood signal increasing'],
-    ),
-    _CountryRisk(
-      code: 'KE',
-      name: 'Kenya',
-      flood: 'HIGH',
-      earthquake: 'LOW',
-      floodScore: 86,
-      earthquakeScore: 18,
-      reasons: ['3-day rainfall signal', 'Flood trend increasing'],
-    ),
-    _CountryRisk(
-      code: 'MZ',
-      name: 'Mozambique',
-      flood: 'HIGH',
-      earthquake: 'LOW',
-      floodScore: 88,
-      earthquakeScore: 17,
-      reasons: ['Increasing flood trend', 'Heavy rainfall signal'],
-    ),
-    _CountryRisk(
-      code: 'NG',
-      name: 'Nigeria',
-      flood: 'MEDIUM',
-      earthquake: 'MEDIUM',
-      floodScore: 56,
-      earthquakeScore: 48,
-      reasons: ['Moderate flood signal', 'Recent seismic event logged'],
-    ),
-    _CountryRisk(
-      code: 'GH',
-      name: 'Ghana',
-      flood: 'LOW',
-      earthquake: 'LOW',
-      floodScore: 31,
-      earthquakeScore: 20,
-      reasons: ['Stable rainfall signal', 'No elevated seismic signal'],
-    ),
-    _CountryRisk(
-      code: 'ZA',
-      name: 'South Africa',
-      flood: 'LOW',
-      earthquake: 'LOW',
-      floodScore: 19,
-      earthquakeScore: 22,
-      reasons: ['All hazards currently low', 'No elevated signal'],
-    ),
-  ];
+ List<_CountryRisk> countries = [];
 
   final List<_ReportType> reportTypes = const [
     _ReportType(
@@ -197,15 +97,25 @@ class _LandingScreenState extends State<LandingScreen>
     'Does MONJED know my personal situation?',
   ];
 
-  @override
-  void initState() {
-    super.initState();
+@override
+void initState() {
+  super.initState();
+  _loadCountries();
+}
 
-    _mapController = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 10),
-    )..repeat();
+Future<void> _loadCountries() async {
+  try {
+    final data = await ApiService().get('/dashboard/risks');
+
+    setState(() {
+      countries = (data as List)
+          .map((item) => _CountryRisk.fromJson(item))
+          .toList();
+    });
+  } catch (e) {
+    debugPrint('Failed to load countries: $e');
   }
+}
 
   @override
   void dispose() {
@@ -325,31 +235,61 @@ class _LandingScreenState extends State<LandingScreen>
 
           const Spacer(),
 
-          if (!isMobile) ...[
-            _navButton('About us', () => _openSection('About us')),
-            _navButton('Contact us', () => _openSection('Contact us')),
-            _navButton('Volunteer', () => _openSection('Volunteer')),
-            const SizedBox(width: 18),
-            IconButton(
-              onPressed: () {},
-              icon: const Icon(
-                Icons.dark_mode_outlined,
-                color: _Colors.bone,
-              ),
-            ),
-            const SizedBox(width: 10),
-            ElevatedButton(
-              onPressed: () => _openSection('Live map'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: _Colors.teal,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 20,
-                  vertical: 14,
-                ),
-              ),
-              child: const Text('OPEN LIVE MAP'),
-            ),
+         if (!isMobile) ...[
+  _navButton(
+    'About us',
+    () => _openSection('About us'),
+  ),
+
+  _navButton(
+    'Contact us',
+    () {
+      Navigator.pushNamed(
+        context,
+        AppRoutes.contact,
+      );
+    },
+  ),
+
+  _navButton(
+    'Volunteer',
+    () {
+      Navigator.pushNamed(
+        context,
+        AppRoutes.volunteer,
+      );
+    },
+  ),
+
+  const SizedBox(width: 18),
+
+  IconButton(
+    onPressed: () {},
+    icon: const Icon(
+      Icons.dark_mode_outlined,
+      color: _Colors.bone,
+    ),
+  ),
+
+  const SizedBox(width: 10),
+
+  ElevatedButton(
+    onPressed: () {
+      Navigator.pushNamed(
+        context,
+        AppRoutes.map,
+      );
+    },
+    style: ElevatedButton.styleFrom(
+      backgroundColor: _Colors.teal,
+      foregroundColor: Colors.white,
+      padding: const EdgeInsets.symmetric(
+        horizontal: 20,
+        vertical: 14,
+      ),
+    ),
+    child: const Text('OPEN LIVE MAP'),
+  ),
           ] else
             IconButton(
               onPressed: () {
@@ -432,7 +372,7 @@ class _LandingScreenState extends State<LandingScreen>
         child: isMobile
             ? Column(
                 children: [
-                  _heroText(),
+                  _heroText(context),
                   const SizedBox(height: 40),
                   _monitoringCard(),
                 ],
@@ -442,7 +382,7 @@ class _LandingScreenState extends State<LandingScreen>
                 children: [
                   Expanded(
                     flex: 6,
-                    child: _heroText(),
+                    child: _heroText(context),
                   ),
                   const SizedBox(width: 60),
                   Expanded(
@@ -455,7 +395,7 @@ class _LandingScreenState extends State<LandingScreen>
     );
   }
 
-  Widget _heroText() {
+  Widget _heroText(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -496,7 +436,9 @@ class _LandingScreenState extends State<LandingScreen>
           runSpacing: 12,
           children: [
             ElevatedButton.icon(
-              onPressed: () => _openSection('Live risk map'),
+                onPressed: () {
+    Navigator.pushNamed(context, AppRoutes.map);
+  },
               icon: const Icon(Icons.map_outlined),
               label: const Text('VIEW LIVE RISK MAP'),
               style: ElevatedButton.styleFrom(
@@ -509,7 +451,12 @@ class _LandingScreenState extends State<LandingScreen>
               ),
             ),
             OutlinedButton.icon(
-              onPressed: () => _openSection('Request help'),
+              onPressed: () {
+  Navigator.pushNamed(
+    context,
+    AppRoutes.help,
+  );
+},
               icon: const Icon(Icons.sos),
               label: const Text('REQUEST HELP'),
               style: OutlinedButton.styleFrom(
@@ -1633,14 +1580,24 @@ class _LandingScreenState extends State<LandingScreen>
                   'NEED HELP',
                   'Request assistance from nearby volunteers.',
                   Icons.sos,
-                  () => _openSection('Help'),
+                  () {
+  Navigator.pushNamed(
+    context,
+    AppRoutes.help,
+  );
+},
                 ),
                 const SizedBox(height: 15),
                 _responderCard(
                   'WANT TO HELP',
                   'Join the volunteer response network.',
                   Icons.volunteer_activism,
-                  () => _openSection('Volunteer'),
+                  () {
+  Navigator.pushNamed(
+    context,
+    AppRoutes.volunteer,
+  );
+},
                 ),
               ],
             )
@@ -1651,7 +1608,12 @@ class _LandingScreenState extends State<LandingScreen>
                     'NEED HELP',
                     'Request assistance from nearby volunteers.',
                     Icons.sos,
-                    () => _openSection('Help'),
+                    () {
+  Navigator.pushNamed(
+    context,
+    AppRoutes.help,
+  );
+},
                   ),
                 ),
                 const SizedBox(width: 20),
@@ -1660,7 +1622,12 @@ class _LandingScreenState extends State<LandingScreen>
                     'WANT TO HELP',
                     'Join the volunteer response network.',
                     Icons.volunteer_activism,
-                    () => _openSection('Volunteer'),
+                    () {
+  Navigator.pushNamed(
+    context,
+    AppRoutes.volunteer,
+  );
+},
                   ),
                 ),
               ],
@@ -2456,6 +2423,37 @@ class _Colors {
 
   static const Color amber = Color(0xFFF59E0B);
   static const Color rose = Color(0xFFE11D48);
+}
+class _CountryRisk {
+  final String code;
+  final String name;
+  final String flood;
+  final String earthquake;
+  final int floodScore;
+  final int earthquakeScore;
+  final List<String> reasons;
+
+  const _CountryRisk({
+    required this.code,
+    required this.name,
+    required this.flood,
+    required this.earthquake,
+    required this.floodScore,
+    required this.earthquakeScore,
+    required this.reasons,
+  });
+
+  factory _CountryRisk.fromJson(Map<String, dynamic> json) {
+    return _CountryRisk(
+      code: json['code'] ?? '',
+      name: json['name'] ?? '',
+      flood: json['flood'] ?? 'LOW',
+      earthquake: json['earthquake'] ?? 'LOW',
+      floodScore: json['flood_score'] ?? 0,
+      earthquakeScore: json['earthquake_score'] ?? 0,
+      reasons: List<String>.from(json['reasons'] ?? []),
+    );
+  }
 }
 
 

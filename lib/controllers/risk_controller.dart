@@ -1,10 +1,15 @@
 import '../models/risk_assessment.dart';
+import '../models/country_risk.dart';
 import '../repositories/risk_repository.dart';
 
 class RiskController {
   final RiskRepository repository;
 
   RiskController({required this.repository});
+
+  // =========================
+  // Flood Risk
+  // =========================
 
   Future<RiskAssessment> calculateFloodRisk({
     required String zoneId,
@@ -21,5 +26,12 @@ class RiskController {
       dataAgeMinutes: dataAgeMinutes,
     );
   }
-}
 
+  // =========================
+  // Dashboard Risks
+  // =========================
+
+  Future<List<CountryRisk>> getDashboardRisks() async {
+    return await repository.getDashboardRisks();
+  }
+}
