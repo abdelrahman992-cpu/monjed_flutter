@@ -261,15 +261,15 @@ Future<void> _loadCountries() async {
     },
   ),
 
-  _navButton(
-    'Volunteer',
-    () {
-      Navigator.pushNamed(
-        context,
-        AppRoutes.volunteer,
-      );
-    },
-  ),
+_navButton(
+  'volunteer',
+  () {
+    Navigator.pushNamed(
+      context,
+      AppRoutes.volunteerLogin,
+    );
+  },
+),
 
   const SizedBox(width: 18),
 
@@ -330,17 +330,50 @@ Future<void> _loadCountries() async {
   }
 
   Widget _mobileNav(String text) {
-    return ListTile(
-      title: Text(
-        text,
-        style: const TextStyle(color: _Colors.bone),
+  return ListTile(
+    title: Text(
+      text,
+      style: const TextStyle(
+        color: _Colors.bone,
       ),
-      onTap: () {
-        Navigator.pop(context);
-        _openSection(text);
-      },
-    );
-  }
+    ),
+    onTap: () {
+      Navigator.pop(context);
+
+      if (text == 'Volunteer') {
+        Navigator.pushNamed(
+          context,
+          AppRoutes.volunteerLogin,
+        );
+        return;
+      }
+
+      if (text == 'Contact us') {
+        Navigator.pushNamed(
+          context,
+          AppRoutes.contact,
+        );
+        return;
+      }
+
+      if (text == 'Open live map') {
+        Navigator.pushNamed(
+          context,
+          AppRoutes.map,
+        );
+        return;
+      }
+
+      if (text == 'About us') {
+        Navigator.pushNamed(
+          context,
+          AppRoutes.about,
+        );
+        return;
+      }
+    },
+  );
+}
 
   Widget _navButton(String text, VoidCallback onPressed) {
     return TextButton(

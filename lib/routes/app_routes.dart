@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../core/services/auth_service.dart';
-
+import '../views/auth/login_screen _volunteer.dart';
+import '../views/auth/signup_screen_volunteer.dart';
 import '../views/home/landing_screen.dart';
 import '../views/auth/login_screen.dart';
 import '../views/auth/admin_login_screen.dart';
@@ -16,6 +17,7 @@ import '../views/dashboard/volunteer_dashboard_screen.dart';
 import '../views/not_found/not_found_screen.dart';
 import '../views/about/about.dart';
 import '../views/auth/signup_screen.dart';
+
 
 class AppRoutes {
   static const String home = '/';
@@ -32,6 +34,8 @@ class AppRoutes {
   static const String notFound = '/404';
   static const String about = '/about';
   static const String signup = '/signup';
+  static const String volunteerLogin = '/volunteer-login';
+static const String volunteerSignup = '/volunteer-signup';
 
 
   static Route<dynamic> generateRoute(RouteSettings settings) {
@@ -105,17 +109,20 @@ class AppRoutes {
       // VOLUNTEER - PROTECTED
       // ============================================================
 
-      case volunteer:
-        if (!AuthService.isLoggedIn) {
-          return MaterialPageRoute(
-            builder: (_) => const LoginScreen(),
-          );
-        }
+   case volunteer:
+  return MaterialPageRoute(
+    builder: (_) => const LoginScreenVolunteer(),
+  );
 
-        return MaterialPageRoute(
-          builder: (_) => const VolunteerScreen(),
-        );
+case volunteerLogin:
+  return MaterialPageRoute(
+    builder: (_) => const LoginScreenVolunteer(),
+  );
 
+case volunteerSignup:
+  return MaterialPageRoute(
+    builder: (_) => const SignUpScreenVolunteer(),
+  );
       // ============================================================
       // CONTACT
       // ============================================================

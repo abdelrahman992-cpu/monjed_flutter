@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import '../../routes/app_routes.dart';
 
-class LoginScreen extends StatefulWidget {
-  const LoginScreen({super.key});
+class LoginScreenVolunteer extends StatefulWidget {
+  const LoginScreenVolunteer({super.key});
 
   @override
-  State<LoginScreen> createState() => _LoginScreenState();
+  State<LoginScreenVolunteer> createState() => _LoginScreenVolunteerState();
 }
 
-class _LoginScreenState extends State<LoginScreen> {
+class _LoginScreenVolunteerState extends State<LoginScreenVolunteer> {
   final TextEditingController _emailController =
       TextEditingController();
 
@@ -443,7 +443,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                   onPressed: () {
                                     Navigator.pushNamed(
                                       context,
-                                      AppRoutes.signup,
+                                      AppRoutes.volunteerSignup,
                                     );
                                   },
 

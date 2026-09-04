@@ -1,13 +1,18 @@
 import 'package:flutter/material.dart';
 
-class VolunteerSignUpScreen extends StatefulWidget {
-  const VolunteerSignUpScreen({super.key});
+class SignUpScreenVolunteer extends StatefulWidget {
+  const SignUpScreenVolunteer({super.key});
 
   @override
-  State<VolunteerSignUpScreen> createState() => _VolunteerSignUpScreenState();
+  State<SignUpScreenVolunteer> createState() => _SignUpScreenVolunteerState();
 }
 
-class _VolunteerSignUpScreenState extends State<VolunteerSignUpScreen> {
+class _SignUpScreenVolunteerState extends State<SignUpScreenVolunteer> {
+  // ===========================================================================
+  // متغير التحكم: اجعله true لإظهار قسم المركبات، أو false لإخفائه في أي وقت لاحقاً
+  // ===========================================================================
+  static const bool _showVehicleSection = true;
+
   final _formKey = GlobalKey<FormState>();
 
   final nameController = TextEditingController();
@@ -159,9 +164,6 @@ class _VolunteerSignUpScreenState extends State<VolunteerSignUpScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            // ==================================================
-                            // SMALL TITLE
-                            // ==================================================
                             const Text(
                               'VOLUNTEER ACCESS',
                               style: TextStyle(
@@ -171,12 +173,7 @@ class _VolunteerSignUpScreenState extends State<VolunteerSignUpScreen> {
                                 letterSpacing: 2.0,
                               ),
                             ),
-
                             const SizedBox(height: 12),
-
-                            // ==================================================
-                            // TITLE
-                            // ==================================================
                             const Text(
                               'Become a volunteer',
                               style: TextStyle(
@@ -185,9 +182,7 @@ class _VolunteerSignUpScreenState extends State<VolunteerSignUpScreen> {
                                 fontWeight: FontWeight.w800,
                               ),
                             ),
-
                             const SizedBox(height: 8),
-
                             const Text(
                               'Create a volunteer account on the MONJED API. Matching happens on your private dashboard.',
                               style: TextStyle(
@@ -196,12 +191,9 @@ class _VolunteerSignUpScreenState extends State<VolunteerSignUpScreen> {
                                 height: 1.5,
                               ),
                             ),
-
                             const SizedBox(height: 24),
 
-                            // ==================================================
-                            // FULL NAME
-                            // ==================================================
+                            // Full Name
                             const Text(
                               'Full name',
                               style: TextStyle(
@@ -214,10 +206,7 @@ class _VolunteerSignUpScreenState extends State<VolunteerSignUpScreen> {
                             const SizedBox(height: 7),
                             TextFormField(
                               controller: nameController,
-                              decoration: inputDecoration(
-                                hint: '',
-                                icon: null,
-                              ),
+                              decoration: inputDecoration(hint: '', icon: null),
                               validator: (value) {
                                 if (value == null || value.trim().isEmpty) {
                                   return 'Please enter your name';
@@ -225,12 +214,9 @@ class _VolunteerSignUpScreenState extends State<VolunteerSignUpScreen> {
                                 return null;
                               },
                             ),
-
                             const SizedBox(height: 16),
 
-                            // ==================================================
-                            // EMAIL
-                            // ==================================================
+                            // Email
                             const Text(
                               'Email',
                               style: TextStyle(
@@ -258,12 +244,9 @@ class _VolunteerSignUpScreenState extends State<VolunteerSignUpScreen> {
                                 return null;
                               },
                             ),
-
                             const SizedBox(height: 16),
 
-                            // ==================================================
-                            // PHONE
-                            // ==================================================
+                            // Phone
                             const Text(
                               'Phone',
                               style: TextStyle(
@@ -277,10 +260,7 @@ class _VolunteerSignUpScreenState extends State<VolunteerSignUpScreen> {
                             TextFormField(
                               controller: phoneController,
                               keyboardType: TextInputType.phone,
-                              decoration: inputDecoration(
-                                hint: '+2547XXXXXXXX',
-                                icon: null,
-                              ),
+                              decoration: inputDecoration(hint: '+2547XXXXXXXX', icon: null),
                               validator: (value) {
                                 if (value == null || value.trim().isEmpty) {
                                   return 'Please enter your phone number';
@@ -288,12 +268,9 @@ class _VolunteerSignUpScreenState extends State<VolunteerSignUpScreen> {
                                 return null;
                               },
                             ),
-
                             const SizedBox(height: 16),
 
-                            // ==================================================
-                            // COUNTRY / ZONE
-                            // ==================================================
+                            // Country / zone
                             const Text(
                               'Country / zone',
                               style: TextStyle(
@@ -306,19 +283,10 @@ class _VolunteerSignUpScreenState extends State<VolunteerSignUpScreen> {
                             const SizedBox(height: 7),
                             DropdownButtonFormField<String>(
                               value: selectedCountry,
-                              decoration: inputDecoration(
-                                hint: '',
-                                icon: null,
-                              ),
+                              decoration: inputDecoration(hint: '', icon: null),
                               items: const [
-                                DropdownMenuItem(
-                                  value: 'Kenya',
-                                  child: Text('Kenya'),
-                                ),
-                                DropdownMenuItem(
-                                  value: 'Egypt',
-                                  child: Text('Egypt'),
-                                ),
+                                DropdownMenuItem(value: 'Kenya', child: Text('Kenya')),
+                                DropdownMenuItem(value: 'Egypt', child: Text('Egypt')),
                               ],
                               onChanged: (value) {
                                 setState(() {
@@ -326,12 +294,9 @@ class _VolunteerSignUpScreenState extends State<VolunteerSignUpScreen> {
                                 });
                               },
                             ),
-
                             const SizedBox(height: 16),
 
-                            // ==================================================
-                            // TOWN / AREA
-                            // ==================================================
+                            // Town / area
                             const Text(
                               'Town / area',
                               style: TextStyle(
@@ -349,128 +314,103 @@ class _VolunteerSignUpScreenState extends State<VolunteerSignUpScreen> {
                                 icon: Icons.location_on_outlined,
                               ),
                             ),
-
                             const SizedBox(height: 16),
 
-                            // ==================================================
-                            // VEHICLE
-                            // ==================================================
-                            const Text(
-                              'Vehicle',
-                              style: TextStyle(
-                                color: Color(0xFF718096),
-                                fontSize: 10,
-                                fontWeight: FontWeight.w600,
-                                letterSpacing: 1.4,
-                              ),
-                            ),
-                            const SizedBox(height: 7),
-                            DropdownButtonFormField<String>(
-                              value: selectedVehicle,
-                              decoration: inputDecoration(
-                                hint: '',
-                                icon: null,
-                              ),
-                              items: const [
-                                DropdownMenuItem(
-                                  value: 'Car',
-                                  child: Text('Car'),
+                            // ==========================================================
+                            // قسم المركبات والقدرة والمهارات (يظهر/يختفي تلقائياً حسب المتغير)
+                            // ==========================================================
+                            if (_showVehicleSection) ...[
+                              // Vehicle
+                              const Text(
+                                'Vehicle',
+                                style: TextStyle(
+                                  color: Color(0xFF718096),
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w600,
+                                  letterSpacing: 1.4,
                                 ),
-                                DropdownMenuItem(
-                                  value: 'Motorcycle',
-                                  child: Text('Motorcycle'),
-                                ),
-                                DropdownMenuItem(
-                                  value: 'Boat',
-                                  child: Text('Boat'),
-                                ),
-                                DropdownMenuItem(
-                                  value: 'None',
-                                  child: Text('None'),
-                                ),
-                              ],
-                              onChanged: (value) {
-                                setState(() {
-                                  selectedVehicle = value ?? 'Car';
-                                });
-                              },
-                            ),
-
-                            const SizedBox(height: 16),
-
-                            // ==================================================
-                            // CAPACITY
-                            // ==================================================
-                            const Text(
-                              'Capacity',
-                              style: TextStyle(
-                                color: Color(0xFF718096),
-                                fontSize: 10,
-                                fontWeight: FontWeight.w600,
-                                letterSpacing: 1.4,
                               ),
-                            ),
-                            const SizedBox(height: 7),
-                            TextFormField(
-                              controller: capacityController,
-                              keyboardType: TextInputType.number,
-                              decoration: inputDecoration(
-                                hint: '',
-                                icon: null,
+                              const SizedBox(height: 7),
+                              DropdownButtonFormField<String>(
+                                value: selectedVehicle,
+                                decoration: inputDecoration(hint: '', icon: null),
+                                items: const [
+                                  DropdownMenuItem(value: 'Car', child: Text('Car')),
+                                  DropdownMenuItem(value: 'Motorcycle', child: Text('Motorcycle')),
+                                  DropdownMenuItem(value: 'Boat', child: Text('Boat')),
+                                  DropdownMenuItem(value: 'None', child: Text('None')),
+                                ],
+                                onChanged: (value) {
+                                  setState(() {
+                                    selectedVehicle = value ?? 'Car';
+                                  });
+                                },
                               ),
-                            ),
+                              const SizedBox(height: 16),
 
-                            const SizedBox(height: 16),
+                              // Capacity
+                              const Text(
+                                'Capacity',
+                                style: TextStyle(
+                                  color: Color(0xFF718096),
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w600,
+                                  letterSpacing: 1.4,
+                                ),
+                              ),
+                              const SizedBox(height: 7),
+                              TextFormField(
+                                controller: capacityController,
+                                keyboardType: TextInputType.number,
+                                decoration: inputDecoration(hint: '', icon: null),
+                              ),
+                              const SizedBox(height: 16),
 
-                            // ==================================================
-                            // SKILLS CHIPS SELECTION
-                            // ==================================================
-                            Wrap(
-                              spacing: 6,
-                              runSpacing: 6,
-                              children: availableSkills.map((skill) {
-                                final isSelected = selectedSkills.contains(skill);
-                                return ChoiceChip(
-                                  label: Text(
-                                    skill,
-                                    style: TextStyle(
-                                      fontSize: 11,
-                                      color: isSelected
-                                          ? const Color(0xFF2455D6)
-                                          : const Color(0xFF718096),
-                                      fontWeight: FontWeight.w500,
+                              // Skills Chips
+                              Wrap(
+                                spacing: 6,
+                                runSpacing: 6,
+                                children: availableSkills.map((skill) {
+                                  final isSelected = selectedSkills.contains(skill);
+                                  return ChoiceChip(
+                                    label: Text(
+                                      skill,
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        color: isSelected
+                                            ? const Color(0xFF2455D6)
+                                            : const Color(0xFF718096),
+                                        fontWeight: FontWeight.w500,
+                                      ),
                                     ),
-                                  ),
-                                  selected: isSelected,
-                                  selectedColor: const Color(0xFFE2EBF8),
-                                  backgroundColor: Colors.white,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(6),
-                                    side: BorderSide(
-                                      color: isSelected
-                                          ? const Color(0xFF2455D6)
-                                          : const Color(0xFFD6DEE9),
+                                    selected: isSelected,
+                                    selectedColor: const Color(0xFFE2EBF8),
+                                    backgroundColor: Colors.white,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(6),
+                                      side: BorderSide(
+                                        color: isSelected
+                                            ? const Color(0xFF2455D6)
+                                            : const Color(0xFFD6DEE9),
+                                      ),
                                     ),
-                                  ),
-                                  showCheckmark: false,
-                                  onSelected: (selected) {
-                                    setState(() {
-                                      if (selected) {
-                                        selectedSkills.add(skill);
-                                      } else {
-                                        selectedSkills.remove(skill);
-                                      }
-                                    });
-                                  },
-                                );
-                              }).toList(),
-                            ),
+                                    showCheckmark: false,
+                                    onSelected: (selected) {
+                                      setState(() {
+                                        if (selected) {
+                                          selectedSkills.add(skill);
+                                        } else {
+                                          selectedSkills.remove(skill);
+                                        }
+                                      });
+                                    },
+                                  );
+                                }).toList(),
+                              ),
+                              const SizedBox(height: 16),
+                            ],
 
-                            const SizedBox(height: 16),
-
-                            // ==================================================
-                            // PASSWORD
-                            // ==================================================
+                            // Password
                             const Text(
                               'Password',
                               style: TextStyle(
@@ -537,12 +477,9 @@ class _VolunteerSignUpScreenState extends State<VolunteerSignUpScreen> {
                                 return null;
                               },
                             ),
-
                             const SizedBox(height: 24),
 
-                            // ==================================================
-                            // SUBMIT BUTTON
-                            // ==================================================
+                            // Submit Button
                             SizedBox(
                               width: double.infinity,
                               height: 42,
@@ -565,12 +502,9 @@ class _VolunteerSignUpScreenState extends State<VolunteerSignUpScreen> {
                                 ),
                               ),
                             ),
-
                             const SizedBox(height: 20),
 
-                            // ==================================================
-                            // ALREADY REGISTERED FOOTER LINK
-                            // ==================================================
+                            // Footer link
                             Center(
                               child: Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
@@ -586,7 +520,7 @@ class _VolunteerSignUpScreenState extends State<VolunteerSignUpScreen> {
                                     onTap: () {
                                       Navigator.pushReplacementNamed(
                                         context,
-                                        '/login',
+                                        '/volunteer-login',
                                       );
                                     },
                                     child: const Text(
@@ -610,9 +544,7 @@ class _VolunteerSignUpScreenState extends State<VolunteerSignUpScreen> {
               ),
             ),
 
-            // ==========================================================
-            // FOOTER BAR
-            // ==========================================================
+            // Footer bar
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
               width: double.infinity,
