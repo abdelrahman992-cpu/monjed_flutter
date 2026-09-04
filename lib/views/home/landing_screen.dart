@@ -1,8 +1,9 @@
 import '../../routes/app_routes.dart';
 import 'dart:async';
 import 'dart:math' as math;
-
+import '../../models/country_risk.dart';
 import 'package:flutter/material.dart';
+import '../../services/api_service.dart';
 
 class LandingScreen extends StatefulWidget {
   const LandingScreen({super.key});
@@ -22,7 +23,7 @@ class _LandingScreenState extends State<LandingScreen>
 
   final ScrollController _scrollController = ScrollController();
 
- List<_CountryRisk> countries = [];
+List<CountryRisk> countries = [];
 
   final List<_ReportType> reportTypes = const [
     _ReportType(
@@ -100,16 +101,25 @@ class _LandingScreenState extends State<LandingScreen>
 @override
 void initState() {
   super.initState();
+
+  _mapController = AnimationController(
+    vsync: this,
+    duration: const Duration(seconds: 2),
+  );
+
   _loadCountries();
 }
-
 Future<void> _loadCountries() async {
   try {
     final data = await ApiService().get('/dashboard/risks');
 
     setState(() {
       countries = (data as List)
-          .map((item) => _CountryRisk.fromJson(item))
+          .map(
+  (item) => CountryRisk.fromJson(
+    Map<String, dynamic>.from(item),
+  ),
+)
           .toList();
     });
   } catch (e) {
@@ -1173,130 +1183,195 @@ Future<void> _loadCountries() async {
     );
   }
 
-  Widget _buildRiskSnapshot(bool isMobile) {
-    final country = countries[selectedCountry];
-
+Widget _buildRiskSnapshot(bool isMobile) {
+  // No data yet
+  if (countries.isEmpty) {
     return _darkSection(
       title: 'LIVE RISK SNAPSHOT',
-      child: Column(
-        children: [
-          SizedBox(
-            width: double.infinity,
-            child: SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: DataTable(
-                headingTextStyle: const TextStyle(
-                  color: _Colors.tealLight,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 11,
-                ),
-                dataTextStyle: const TextStyle(
-                  color: _Colors.bone,
-                  fontSize: 12,
-                ),
-                columns: const [
-                  DataColumn(label: Text('COUNTRY')),
-                  DataColumn(label: Text('FLOOD')),
-                  DataColumn(label: Text('EARTHQUAKE')),
-                ],
-                rows: List.generate(
-                  countries.length,
-                  (index) {
-                    final item = countries[index];
-
-                    return DataRow(
-                      selected: selectedCountry == index,
-                      onSelectChanged: (_) {
-                        setState(() {
-                          selectedCountry = index;
-                        });
-                      },
-                      cells: [
-                        DataCell(Text('${item.code} · ${item.name}')),
-                        DataCell(_riskBadge(item.flood)),
-                        DataCell(_riskBadge(item.earthquake)),
-                      ],
-                    );
-                  },
-                ),
-              ),
+      child: const Padding(
+        padding: EdgeInsets.all(30),
+        child: Center(
+          child: Text(
+            'No risk data available',
+            style: TextStyle(
+              color: _Colors.bone,
+              fontSize: 16,
             ),
           ),
-          const SizedBox(height: 30),
-          Container(
-            padding: const EdgeInsets.all(25),
-            decoration: BoxDecoration(
-              color: _Colors.panel,
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: isMobile
-                ? Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        country.name,
-                        style: const TextStyle(
-                          color: _Colors.bone,
-                          fontSize: 25,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-                      _scoreBox(
-                        'FLOOD',
-                        country.floodScore,
-                        country.flood,
-                      ),
-                      const SizedBox(height: 12),
-                      _scoreBox(
-                        'EARTHQUAKE',
-                        country.earthquakeScore,
-                        country.earthquake,
-                      ),
-                      const SizedBox(height: 20),
-                      _reasons(country),
-                    ],
-                  )
-                : Row(
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              country.name,
-                              style: const TextStyle(
-                                color: _Colors.bone,
-                                fontSize: 25,
-                                fontWeight: FontWeight.w800,
-                              ),
-                            ),
-                            const SizedBox(height: 20),
-                            _reasons(country),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: 30),
-                      _scoreBox(
-                        'FLOOD',
-                        country.floodScore,
-                        country.flood,
-                      ),
-                      const SizedBox(width: 15),
-                      _scoreBox(
-                        'EARTHQUAKE',
-                        country.earthquakeScore,
-                        country.earthquake,
-                      ),
-                    ],
-                  ),
-          ),
-        ],
+        ),
       ),
     );
   }
 
-  Widget _reasons(_CountryRisk country) {
+  // Protect against invalid selected index
+  final safeIndex =
+      selectedCountry >= countries.length ? 0 : selectedCountry;
+
+  final country = countries[safeIndex];
+
+  return _darkSection(
+    title: 'LIVE RISK SNAPSHOT',
+    child: Column(
+      children: [
+        // ============================================================
+        // RISK TABLE
+        // ============================================================
+
+        SizedBox(
+          width: double.infinity,
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: DataTable(
+              headingTextStyle: const TextStyle(
+                color: _Colors.tealLight,
+                fontWeight: FontWeight.bold,
+                fontSize: 11,
+              ),
+              dataTextStyle: const TextStyle(
+                color: _Colors.bone,
+                fontSize: 12,
+              ),
+              columns: const [
+                DataColumn(label: Text('COUNTRY')),
+                DataColumn(label: Text('ZONE')),
+                DataColumn(label: Text('HAZARD')),
+                DataColumn(label: Text('SCORE')),
+                DataColumn(label: Text('LEVEL')),
+              ],
+              rows: List.generate(
+                countries.length,
+                (index) {
+                  final item = countries[index];
+
+                  return DataRow(
+                    selected: safeIndex == index,
+                    onSelectChanged: (_) {
+                      setState(() {
+                        selectedCountry = index;
+                      });
+                    },
+                    cells: [
+                      DataCell(
+                        Text(item.country),
+                      ),
+                      DataCell(
+                        Text(item.zone),
+                      ),
+                      DataCell(
+                        Text(item.hazard),
+                      ),
+                      DataCell(
+                        Text('${item.score}'),
+                      ),
+                      DataCell(
+                        _riskBadge(item.level),
+                      ),
+                    ],
+                  );
+                },
+              ),
+            ),
+          ),
+        ),
+
+        const SizedBox(height: 30),
+
+        // ============================================================
+        // SELECTED RISK DETAILS
+        // ============================================================
+
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(25),
+          decoration: BoxDecoration(
+            color: _Colors.panel,
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: isMobile
+              ? Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      country.country,
+                      style: const TextStyle(
+                        color: _Colors.bone,
+                        fontSize: 25,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+
+                    const SizedBox(height: 8),
+
+                    Text(
+                      '${country.zone} · ${country.hazard}',
+                      style: const TextStyle(
+                        color: _Colors.tealLight,
+                        fontSize: 14,
+                      ),
+                    ),
+
+                    const SizedBox(height: 20),
+
+                    _scoreBox(
+                      country.hazard.toUpperCase(),
+                      country.score,
+                      country.level,
+                    ),
+
+                    const SizedBox(height: 20),
+
+                    _reasons(country),
+                  ],
+                )
+              : Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            country.country,
+                            style: const TextStyle(
+                              color: _Colors.bone,
+                              fontSize: 25,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+
+                          const SizedBox(height: 8),
+
+                          Text(
+                            '${country.zone} · ${country.hazard}',
+                            style: const TextStyle(
+                              color: _Colors.tealLight,
+                              fontSize: 14,
+                            ),
+                          ),
+
+                          const SizedBox(height: 20),
+
+                          _reasons(country),
+                        ],
+                      ),
+                    ),
+
+                    const SizedBox(width: 30),
+
+                    _scoreBox(
+                      country.hazard.toUpperCase(),
+                      country.score,
+                      country.level,
+                    ),
+                  ],
+                ),
+        ),
+      ],
+    ),
+  );
+}
+
+Widget _reasons(CountryRisk country) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -2347,25 +2422,7 @@ class _FeatureCard extends StatelessWidget {
 // DATA CLASSES
 // ============================================================
 
-class _CountryRisk {
-  final String code;
-  final String name;
-  final String flood;
-  final String earthquake;
-  final int floodScore;
-  final int earthquakeScore;
-  final List<String> reasons;
 
-  const _CountryRisk({
-    required this.code,
-    required this.name,
-    required this.flood,
-    required this.earthquake,
-    required this.floodScore,
-    required this.earthquakeScore,
-    required this.reasons,
-  });
-}
 
 class _ReportType {
   final String title;
@@ -2424,36 +2481,9 @@ class _Colors {
   static const Color amber = Color(0xFFF59E0B);
   static const Color rose = Color(0xFFE11D48);
 }
-class _CountryRisk {
-  final String code;
-  final String name;
-  final String flood;
-  final String earthquake;
-  final int floodScore;
-  final int earthquakeScore;
-  final List<String> reasons;
 
-  const _CountryRisk({
-    required this.code,
-    required this.name,
-    required this.flood,
-    required this.earthquake,
-    required this.floodScore,
-    required this.earthquakeScore,
-    required this.reasons,
-  });
 
-  factory _CountryRisk.fromJson(Map<String, dynamic> json) {
-    return _CountryRisk(
-      code: json['code'] ?? '',
-      name: json['name'] ?? '',
-      flood: json['flood'] ?? 'LOW',
-      earthquake: json['earthquake'] ?? 'LOW',
-      floodScore: json['flood_score'] ?? 0,
-      earthquakeScore: json['earthquake_score'] ?? 0,
-      reasons: List<String>.from(json['reasons'] ?? []),
-    );
-  }
-}
+
+
 
 

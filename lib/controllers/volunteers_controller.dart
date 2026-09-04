@@ -1,5 +1,5 @@
 import '../models/volunteer.dart';
-import '../repositories/volunteer_repository.dart';
+import '../repositories/volunteers_repository.dart';
 
 class VolunteerController {
   final VolunteerRepository repository;
