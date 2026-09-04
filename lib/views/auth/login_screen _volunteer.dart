@@ -9,8 +9,11 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  final TextEditingController _emailController = TextEditingController();
-  final TextEditingController _passwordController = TextEditingController();
+  final TextEditingController _emailController =
+      TextEditingController();
+
+  final TextEditingController _passwordController =
+      TextEditingController();
 
   bool _obscurePassword = true;
 
@@ -45,12 +48,14 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF6F8FC),
+
       body: SafeArea(
         child: Column(
           children: [
             // ==========================================================
             // HEADER
             // ==========================================================
+
             Container(
               height: 52,
               width: double.infinity,
@@ -65,7 +70,9 @@ class _LoginScreenState extends State<LoginScreen> {
               child: Align(
                 alignment: Alignment.centerLeft,
                 child: Padding(
-                  padding: const EdgeInsets.only(left: 20),
+                  padding: const EdgeInsets.only(
+                    left: 92,
+                  ),
                   child: Row(
                     children: [
                       Container(
@@ -86,7 +93,9 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                         ),
                       ),
+
                       const SizedBox(width: 9),
+
                       const Text(
                         'MONJED',
                         style: TextStyle(
@@ -105,37 +114,83 @@ class _LoginScreenState extends State<LoginScreen> {
             // ==========================================================
             // CONTENT
             // ==========================================================
+
             Expanded(
               child: SingleChildScrollView(
                 child: Center(
                   child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 380),
+                    constraints: const BoxConstraints(
+                      maxWidth: 350,
+                    ),
+
                     child: Padding(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 24,
-                        vertical: 30,
+                        horizontal: 20,
+                        vertical: 18,
                       ),
+
                       child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                        crossAxisAlignment:
+                            CrossAxisAlignment.start,
+
                         children: [
+                          // ==================================================
+                          // BACK
+                          // ==================================================
+
+                          TextButton.icon(
+                            onPressed: () {
+                              if (Navigator.canPop(context)) {
+                                Navigator.pop(context);
+                              } else {
+                                Navigator.pushReplacementNamed(
+                                  context,
+                                  AppRoutes.home,
+                                );
+                              }
+                            },
+
+                            icon: const Icon(
+                              Icons.arrow_back,
+                              size: 17,
+                              color: Color(0xFF71829A),
+                            ),
+
+                            label: const Text(
+                              'Back',
+                              style: TextStyle(
+                                color: Color(0xFF71829A),
+                                fontSize: 13,
+                              ),
+                            ),
+
+                            style: TextButton.styleFrom(
+                              padding: EdgeInsets.zero,
+                            ),
+                          ),
+
+                          const SizedBox(height: 45),
+
                           // ==================================================
                           // SMALL TITLE
                           // ==================================================
+
                           const Text(
-                            'SIGN IN  ·  ALERTS READY',
+                            'VOLUNTEER ACCESS',
                             style: TextStyle(
                               color: Color(0xFF5F83D7),
                               fontSize: 10,
                               fontWeight: FontWeight.bold,
-                              letterSpacing: 2.0,
+                              letterSpacing: 2.5,
                             ),
                           ),
 
-                          const SizedBox(height: 12),
+                          const SizedBox(height: 13),
 
                           // ==================================================
                           // TITLE
                           // ==================================================
+
                           const Text(
                             'Log in',
                             style: TextStyle(
@@ -145,10 +200,10 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                           ),
 
-                          const SizedBox(height: 8),
+                          const SizedBox(height: 10),
 
                           const Text(
-                            'Log in with the email or phone you registered with to open the map, report, and request help.',
+                            'Log in with the email or phone you registered as a volunteer.',
                             style: TextStyle(
                               color: Color(0xFF718096),
                               fontSize: 13,
@@ -156,11 +211,12 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                           ),
 
-                          const SizedBox(height: 24),
+                          const SizedBox(height: 25),
 
                           // ==================================================
                           // EMAIL / PHONE
                           // ==================================================
+
                           const Text(
                             'Email or phone',
                             style: TextStyle(
@@ -175,33 +231,61 @@ class _LoginScreenState extends State<LoginScreen> {
 
                           TextField(
                             controller: _emailController,
-                            keyboardType: TextInputType.emailAddress,
+                            keyboardType:
+                                TextInputType.emailAddress,
+
                             decoration: InputDecoration(
-                              hintText: 'you@example.com or +2547...',
+                              hintText:
+                                  'you@example.com or +2547...',
+
                               hintStyle: const TextStyle(
                                 color: Color(0xFFB1BDCC),
                                 fontSize: 13,
                               ),
+
                               prefixIcon: const Icon(
                                 Icons.email_outlined,
                                 size: 17,
                                 color: Color(0xFF8291A5),
                               ),
+
                               filled: true,
                               fillColor: Colors.white,
-                              contentPadding: const EdgeInsets.symmetric(
+
+                              contentPadding:
+                                  const EdgeInsets.symmetric(
                                 vertical: 14,
                                 horizontal: 12,
                               ),
-                              enabledBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(6),
-                                borderSide: const BorderSide(
+
+                              border: OutlineInputBorder(
+                                borderRadius:
+                                    BorderRadius.circular(6),
+
+                                borderSide:
+                                    const BorderSide(
                                   color: Color(0xFFD6DEE9),
                                 ),
                               ),
-                              focusedBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(6),
-                                borderSide: const BorderSide(
+
+                              enabledBorder:
+                                  OutlineInputBorder(
+                                borderRadius:
+                                    BorderRadius.circular(6),
+
+                                borderSide:
+                                    const BorderSide(
+                                  color: Color(0xFFD6DEE9),
+                                ),
+                              ),
+
+                              focusedBorder:
+                                  OutlineInputBorder(
+                                borderRadius:
+                                    BorderRadius.circular(6),
+
+                                borderSide:
+                                    const BorderSide(
                                   color: Color(0xFF2455D6),
                                 ),
                               ),
@@ -213,6 +297,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           // ==================================================
                           // PASSWORD
                           // ==================================================
+
                           const Text(
                             'Password',
                             style: TextStyle(
@@ -228,139 +313,198 @@ class _LoginScreenState extends State<LoginScreen> {
                           TextField(
                             controller: _passwordController,
                             obscureText: _obscurePassword,
+
                             decoration: InputDecoration(
                               prefixIcon: const Icon(
                                 Icons.lock_outline,
                                 size: 17,
                                 color: Color(0xFF8291A5),
                               ),
+
                               suffixIcon: IconButton(
                                 icon: Icon(
                                   _obscurePassword
                                       ? Icons.visibility_outlined
                                       : Icons.visibility_off_outlined,
                                   size: 18,
-                                  color: const Color(0xFF8291A5),
+                                  color: const Color(
+                                    0xFF8291A5,
+                                  ),
                                 ),
+
                                 onPressed: () {
                                   setState(() {
-                                    _obscurePassword = !_obscurePassword;
+                                    _obscurePassword =
+                                        !_obscurePassword;
                                   });
                                 },
                               ),
+
                               filled: true,
                               fillColor: Colors.white,
-                              contentPadding: const EdgeInsets.symmetric(
+
+                              contentPadding:
+                                  const EdgeInsets.symmetric(
                                 vertical: 14,
                               ),
-                              enabledBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(6),
-                                borderSide: const BorderSide(
+
+                              border: OutlineInputBorder(
+                                borderRadius:
+                                    BorderRadius.circular(6),
+
+                                borderSide:
+                                    const BorderSide(
                                   color: Color(0xFFD6DEE9),
                                 ),
                               ),
-                              focusedBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(6),
-                                borderSide: const BorderSide(
+
+                              enabledBorder:
+                                  OutlineInputBorder(
+                                borderRadius:
+                                    BorderRadius.circular(6),
+
+                                borderSide:
+                                    const BorderSide(
+                                  color: Color(0xFFD6DEE9),
+                                ),
+                              ),
+
+                              focusedBorder:
+                                  OutlineInputBorder(
+                                borderRadius:
+                                    BorderRadius.circular(6),
+
+                                borderSide:
+                                    const BorderSide(
                                   color: Color(0xFF2455D6),
                                 ),
                               ),
                             ),
                           ),
 
-                          const SizedBox(height: 20),
+                          const SizedBox(height: 14),
 
                           // ==================================================
                           // LOGIN BUTTON
                           // ==================================================
+
                           SizedBox(
                             width: double.infinity,
-                            height: 42,
+                            height: 37,
+
                             child: ElevatedButton(
                               onPressed: _login,
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFF2455D6),
-                                foregroundColor: Colors.white,
+
+                              style:
+                                  ElevatedButton.styleFrom(
+                                backgroundColor:
+                                    const Color(0xFF2455D6),
+
+                                foregroundColor:
+                                    Colors.white,
+
                                 elevation: 0,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(6),
+
+                                shape:
+                                    RoundedRectangleBorder(
+                                  borderRadius:
+                                      BorderRadius.circular(6),
                                 ),
                               ),
+
                               child: const Text(
                                 'Log in',
                                 style: TextStyle(
                                   fontSize: 13,
-                                  fontWeight: FontWeight.w700,
+                                  fontWeight:
+                                      FontWeight.w700,
                                 ),
                               ),
                             ),
                           ),
 
-                          const SizedBox(height: 20),
+                          const SizedBox(height: 17),
 
                           // ==================================================
-                          // LINKS (Create an account)
+                          // LINKS
                           // ==================================================
+
                           Center(
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
+                            child: Wrap(
+                              alignment:
+                                  WrapAlignment.center,
+
                               children: [
-                                const Text(
-                                  'New here? ',
-                                  style: TextStyle(
-                                    color: Color(0xFF718096),
-                                    fontSize: 13,
-                                  ),
-                                ),
-                                GestureDetector(
-                                  onTap: () {
+                                // ------------------------------------------------
+                                // REGISTER AS VOLUNTEER
+                                // ------------------------------------------------
+
+                                TextButton(
+                                  onPressed: () {
                                     Navigator.pushNamed(
                                       context,
                                       AppRoutes.signup,
                                     );
                                   },
+
+                                  style:
+                                      TextButton.styleFrom(
+                                    padding: EdgeInsets.zero,
+                                    minimumSize: Size.zero,
+                                    tapTargetSize:
+                                        MaterialTapTargetSize
+                                            .shrinkWrap,
+                                  ),
+
                                   child: const Text(
-                                    'Create an account',
+                                    'Register as a volunteer',
                                     style: TextStyle(
-                                      color: Color(0xFF2455D6),
+                                      color:
+                                          Color(0xFF3563C7),
                                       fontSize: 13,
-                                      fontWeight: FontWeight.w600,
+                                      fontWeight:
+                                          FontWeight.w600,
                                     ),
                                   ),
                                 ),
-                              ],
-                            ),
-                          ),
 
-                          const SizedBox(height: 16),
-
-                          // ==================================================
-                          // VOLUNTEER / OPS SIGN-IN LINK
-                          // ==================================================
-                          Center(
-                            child: Wrap(
-                              alignment: WrapAlignment.center,
-                              children: [
                                 const Text(
-                                  'Volunteer or operations staff? ',
+                                  ' · ',
                                   style: TextStyle(
-                                    color: Color(0xFF718096),
-                                    fontSize: 12,
+                                    color:
+                                        Color(0xFF3563C7),
                                   ),
                                 ),
-                                GestureDetector(
-                                  onTap: () {
+
+                                // ------------------------------------------------
+                                // STAFF LOGIN
+                                // ------------------------------------------------
+
+                                TextButton(
+                                  onPressed: () {
                                     Navigator.pushNamed(
                                       context,
                                       AppRoutes.adminLogin,
                                     );
                                   },
+
+                                  style:
+                                      TextButton.styleFrom(
+                                    padding: EdgeInsets.zero,
+                                    minimumSize: Size.zero,
+                                    tapTargetSize:
+                                        MaterialTapTargetSize
+                                            .shrinkWrap,
+                                  ),
+
                                   child: const Text(
-                                    'Use the volunteer / ops sign-in.',
+                                    'Staff login',
                                     style: TextStyle(
-                                      color: Color(0xFF2455D6),
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w600,
+                                      color:
+                                          Color(0xFF3563C7),
+                                      fontSize: 13,
+                                      fontWeight:
+                                          FontWeight.w600,
                                     ),
                                   ),
                                 ),
@@ -378,9 +522,11 @@ class _LoginScreenState extends State<LoginScreen> {
             // ==========================================================
             // FOOTER
             // ==========================================================
+
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              height: 35,
               width: double.infinity,
+
               decoration: const BoxDecoration(
                 border: Border(
                   top: BorderSide(
@@ -388,32 +534,39 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                 ),
               ),
-              child: const Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Expanded(
-                    child: Text(
+
+              child: Padding(
+                padding:
+                    const EdgeInsets.symmetric(
+                  horizontal: 92,
+                ),
+
+                child: Row(
+                  mainAxisAlignment:
+                      MainAxisAlignment.spaceBetween,
+
+                  children: const [
+                    Text(
                       'FLOOD AND EARTHQUAKE SCORES ARE NEVER BLENDED',
                       style: TextStyle(
                         color: Color(0xFF8B9AAF),
-                        fontSize: 7.5,
+                        fontSize: 8,
                         fontWeight: FontWeight.w600,
-                        letterSpacing: 0.5,
+                        letterSpacing: 1.5,
                       ),
-                      overflow: TextOverflow.ellipsis,
                     ),
-                  ),
-                  SizedBox(width: 4),
-                  Text(
-                    'LIVE API · COMMUNITY REPORT',
-                    style: TextStyle(
-                      color: Color(0xFF8B9AAF),
-                      fontSize: 7.5,
-                      fontWeight: FontWeight.w600,
-                      letterSpacing: 0.5,
+
+                    Text(
+                      'LIVE API: FLOOD RISK · COMMUNITY REPORT ANALYZE',
+                      style: TextStyle(
+                        color: Color(0xFF8B9AAF),
+                        fontSize: 8,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: 1.2,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ],
