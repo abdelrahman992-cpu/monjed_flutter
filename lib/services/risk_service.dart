@@ -1,24 +1,20 @@
-import 'dart:convert';
-
-import '../core/network/api_client.dart';
 import '../models/risk_snapshot.dart';
+import 'api_service.dart';
 
 class RiskService {
+  static final ApiService _api = ApiService();
+
   static Future<List<RiskSnapshot>> getRiskSnapshots() async {
-    final response = await ApiClient.get('/api/risk/');
+    final data = await _api.get('/api/risk/');
 
-    if (response.statusCode != 200) {
-      throw Exception(
-        'Failed to load risk data: ${response.statusCode}',
-      );
+    if (data is! List) {
+      throw Exception('Invalid risk API response');
     }
-
-    final List<dynamic> data = jsonDecode(response.body);
 
     return data
         .map(
           (item) => RiskSnapshot.fromJson(
-            item as Map<String, dynamic>,
+            Map<String, dynamic>.from(item),
           ),
         )
         .toList();

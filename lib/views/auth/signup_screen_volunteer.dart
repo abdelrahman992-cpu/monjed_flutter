@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../../services/api_service.dart';
+import '../../models/zone.dart';
 
 class SignUpScreenVolunteer extends StatefulWidget {
   const SignUpScreenVolunteer({super.key});
@@ -14,16 +16,22 @@ class _SignUpScreenVolunteerState extends State<SignUpScreenVolunteer> {
   static const bool _showVehicleSection = true;
 
   final _formKey = GlobalKey<FormState>();
+final ApiService _api = ApiService();
 
+List<Zone> zones = [];
+Zone? selectedZone;
+
+bool loadingZones = true;
+bool creatingAccount = false;
   final nameController = TextEditingController();
   final emailController = TextEditingController();
   final phoneController = TextEditingController();
-  final townController = TextEditingController();
+
   final capacityController = TextEditingController(text: '3');
   final passwordController = TextEditingController();
 
   bool obscurePassword = true;
-  String selectedCountry = 'Kenya';
+String? selectedCountry;
   String selectedVehicle = 'Car';
   
   final List<String> selectedSkills = ['Driving'];
@@ -42,26 +50,163 @@ class _SignUpScreenVolunteerState extends State<SignUpScreenVolunteer> {
     nameController.dispose();
     emailController.dispose();
     phoneController.dispose();
-    townController.dispose();
     capacityController.dispose();
     passwordController.dispose();
     super.dispose();
   }
+   @override
+  void initState() {
+    super.initState();
+    _loadZones();
+  }
+  Future<void> _loadZones() async {
+  try {
+    final data = await _api.get('/dashboard/zones');
 
-  void handleSignUp() {
-    if (!_formKey.currentState!.validate()) {
-      return;
+    print('ZONES API RESPONSE: $data');
+
+    if (data is! List) {
+      throw Exception('Invalid zones response');
     }
+
+    final loadedZones = data
+        .map(
+          (item) => Zone.fromJson(
+            Map<String, dynamic>.from(item),
+          ),
+        )
+        .toList();
+
+    print('LOADED ZONES: ${loadedZones.length}');
+
+    for (final zone in loadedZones) {
+      print(
+        'ZONE: ${zone.zoneId} | ${zone.name} | ${zone.country}',
+      );
+    }
+
+    if (!mounted) return;
+
+    setState(() {
+      zones = loadedZones;
+
+      if (loadedZones.isNotEmpty) {
+        selectedCountry = loadedZones.first.country;
+      }
+
+      loadingZones = false;
+    });
+  } catch (e) {
+    print('LOAD ZONES ERROR: $e');
+
+    if (!mounted) return;
+
+    setState(() {
+      loadingZones = false;
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          'Failed to load zones: $e',
+        ),
+      ),
+    );
+  }
+}
+ Future<void> handleSignUp() async {
+  if (!_formKey.currentState!.validate()) {
+    return;
+  }
+
+  if (selectedZone == null) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Please select a zone.'),
+      ),
+    );
+    return;
+  }
+
+  final zone = selectedZone!;
+
+  if (zone.latitude == null || zone.longitude == null) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text(
+          'Selected zone does not have coordinates.',
+        ),
+      ),
+    );
+    return;
+  }
+
+  setState(() {
+    creatingAccount = true;
+  });
+
+  try {
+    final capacity =
+        int.tryParse(
+          capacityController.text.trim(),
+        ) ??
+        1;
+
+    await _api.post(
+      '/assistance/volunteers/',
+      body: {
+        'name': nameController.text.trim(),
+
+        'zone_id': zone.zoneId,
+
+        'latitude': zone.latitude,
+
+        'longitude': zone.longitude,
+
+        'available': true,
+
+        'responder_level': 'volunteer',
+
+        'vehicle_type': selectedVehicle,
+
+        'capacity': capacity,
+
+        'skills': selectedSkills,
+      },
+    );
+
+    if (!mounted) return;
 
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
-        content: Text('Volunteer account information is valid.'),
+        content: Text(
+          'Volunteer account created successfully.',
+        ),
       ),
     );
 
-    // TODO: Connect this later to FastAPI
-  }
+    Navigator.pushReplacementNamed(
+      context,
+      '/volunteer-login',
+    );
+  } catch (e) {
+    if (!mounted) return;
 
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          'Failed to create volunteer account: $e',
+        ),
+      ),
+    );
+  } finally {
+    if (mounted) {
+      setState(() {
+        creatingAccount = false;
+      });
+    }
+  }
+}
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -270,51 +415,80 @@ class _SignUpScreenVolunteerState extends State<SignUpScreenVolunteer> {
                             ),
                             const SizedBox(height: 16),
 
-                            // Country / zone
-                            const Text(
-                              'Country / zone',
-                              style: TextStyle(
-                                color: Color(0xFF718096),
-                                fontSize: 10,
-                                fontWeight: FontWeight.w600,
-                                letterSpacing: 1.4,
-                              ),
-                            ),
-                            const SizedBox(height: 7),
-                            DropdownButtonFormField<String>(
-                              value: selectedCountry,
-                              decoration: inputDecoration(hint: '', icon: null),
-                              items: const [
-                                DropdownMenuItem(value: 'Kenya', child: Text('Kenya')),
-                                DropdownMenuItem(value: 'Egypt', child: Text('Egypt')),
-                              ],
-                              onChanged: (value) {
-                                setState(() {
-                                  selectedCountry = value ?? 'Kenya';
-                                });
-                              },
-                            ),
-                            const SizedBox(height: 16),
+DropdownButtonFormField<String>(
+  value: selectedCountry,
+  decoration: inputDecoration(
+    hint: loadingZones
+        ? 'Loading countries...'
+        : 'Select country',
+    icon: Icons.public,
+  ),
+  isExpanded: true,
+
+  items: zones
+      .map((zone) => zone.country)
+      .where((country) => country.isNotEmpty)
+      .toSet()
+      .map(
+        (country) => DropdownMenuItem<String>(
+          value: country,
+          child: Text(country),
+        ),
+      )
+      .toList(),
+
+  onChanged: (value) {
+    if (value == null) return;
+
+    setState(() {
+      selectedCountry = value;
+      selectedZone = null;
+    });
+  },
+
+  validator: (value) {
+    if (value == null || value.isEmpty) {
+      return 'Please select your country';
+    }
+
+    return null;
+  },
+),                  const SizedBox(height: 16),
 
                             // Town / area
-                            const Text(
-                              'Town / area',
-                              style: TextStyle(
-                                color: Color(0xFF718096),
-                                fontSize: 10,
-                                fontWeight: FontWeight.w600,
-                                letterSpacing: 1.4,
-                              ),
-                            ),
-                            const SizedBox(height: 7),
-                            TextFormField(
-                              controller: townController,
-                              decoration: inputDecoration(
-                                hint: '',
-                                icon: Icons.location_on_outlined,
-                              ),
-                            ),
-                            const SizedBox(height: 16),
+                             DropdownButtonFormField<Zone>(
+  value: selectedZone,
+  decoration: const InputDecoration(
+    labelText: 'Zone / Area',
+  ),
+  isExpanded: true,
+  items: zones
+      .where(
+        (zone) => zone.country == selectedCountry,
+      )
+      .map(
+        (zone) => DropdownMenuItem<Zone>(
+          value: zone,
+          child: Text(zone.name),
+        ),
+      )
+      .toList(),
+  onChanged: loadingZones
+      ? null
+      : (zone) {
+          setState(() {
+            selectedZone = zone;
+          });
+        },
+  validator: (value) {
+    if (value == null) {
+      return 'Please select your zone';
+    }
+
+    return null;
+  },
+),
+                         
 
                             // ==========================================================
                             // قسم المركبات والقدرة والمهارات (يظهر/يختفي تلقائياً حسب المتغير)
@@ -484,7 +658,7 @@ class _SignUpScreenVolunteerState extends State<SignUpScreenVolunteer> {
                               width: double.infinity,
                               height: 42,
                               child: ElevatedButton(
-                                onPressed: handleSignUp,
+onPressed: creatingAccount ? null : handleSignUp,
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: const Color(0xFF2455D6),
                                   foregroundColor: Colors.white,
@@ -493,13 +667,22 @@ class _SignUpScreenVolunteerState extends State<SignUpScreenVolunteer> {
                                     borderRadius: BorderRadius.circular(6),
                                   ),
                                 ),
-                                child: const Text(
-                                  'Create volunteer account',
-                                  style: TextStyle(
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                                ),
+                               child: creatingAccount
+    ? const SizedBox(
+        width: 18,
+        height: 18,
+        child: CircularProgressIndicator(
+          strokeWidth: 2,
+          color: Colors.white,
+        ),
+      )
+    : const Text(
+        'Create volunteer account',
+        style: TextStyle(
+          fontSize: 13,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
                               ),
                             ),
                             const SizedBox(height: 20),

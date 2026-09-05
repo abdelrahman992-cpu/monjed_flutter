@@ -12,7 +12,7 @@ class ApiService {
     final response = await http.get(
       Uri.parse('$baseUrl$endpoint'),
       headers: {
-        'Content-Type': 'application/json',
+        'Accept': 'application/json',
       },
     );
 
@@ -30,6 +30,7 @@ class ApiService {
     final response = await http.post(
       Uri.parse('$baseUrl$endpoint'),
       headers: {
+        'Accept': 'application/json',
         'Content-Type': 'application/json',
       },
       body: body != null ? jsonEncode(body) : null,
@@ -49,6 +50,7 @@ class ApiService {
     final response = await http.patch(
       Uri.parse('$baseUrl$endpoint'),
       headers: {
+        'Accept': 'application/json',
         'Content-Type': 'application/json',
       },
       body: body != null ? jsonEncode(body) : null,
@@ -58,15 +60,37 @@ class ApiService {
   }
 
   // =========================
-  // Handle Response
+  // DELETE
+  // =========================
+
+  Future<dynamic> delete(String endpoint) async {
+    final response = await http.delete(
+      Uri.parse('$baseUrl$endpoint'),
+      headers: {
+        'Accept': 'application/json',
+      },
+    );
+
+    return _handleResponse(response);
+  }
+
+  // =========================
+  // RESPONSE
   // =========================
 
   dynamic _handleResponse(http.Response response) {
-    final data = response.body.isNotEmpty
-        ? jsonDecode(response.body)
-        : null;
+    dynamic data;
 
-    if (response.statusCode >= 200 && response.statusCode < 300) {
+    if (response.body.isNotEmpty) {
+      try {
+        data = jsonDecode(response.body);
+      } catch (_) {
+        data = response.body;
+      }
+    }
+
+    if (response.statusCode >= 200 &&
+        response.statusCode < 300) {
       return data;
     }
 
