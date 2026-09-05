@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../services/api_service.dart';
 import '../../models/zone.dart';
+import '../../services/zone_service.dart';
+import '../../controllers/zone_controller.dart';
 
 class SignUpScreenVolunteer extends StatefulWidget {
   const SignUpScreenVolunteer({super.key});
@@ -17,6 +19,10 @@ class _SignUpScreenVolunteerState extends State<SignUpScreenVolunteer> {
 
   final _formKey = GlobalKey<FormState>();
 final ApiService _api = ApiService();
+
+final ZonesController zonesController = ZonesController(
+  zoneService: ZoneService(),
+);
 
 List<Zone> zones = [];
 Zone? selectedZone;
@@ -59,23 +65,9 @@ String? selectedCountry;
     super.initState();
     _loadZones();
   }
-  Future<void> _loadZones() async {
+Future<void> _loadZones() async {
   try {
-    final data = await _api.get('/dashboard/zones');
-
-    print('ZONES API RESPONSE: $data');
-
-    if (data is! List) {
-      throw Exception('Invalid zones response');
-    }
-
-    final loadedZones = data
-        .map(
-          (item) => Zone.fromJson(
-            Map<String, dynamic>.from(item),
-          ),
-        )
-        .toList();
+    final loadedZones = await zonesController.loadZones();
 
     print('LOADED ZONES: ${loadedZones.length}');
 
@@ -114,6 +106,7 @@ String? selectedCountry;
     );
   }
 }
+
  Future<void> handleSignUp() async {
   if (!_formKey.currentState!.validate()) {
     return;
@@ -130,17 +123,14 @@ String? selectedCountry;
 
   final zone = selectedZone!;
 
-  if (zone.latitude == null || zone.longitude == null) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text(
-          'Selected zone does not have coordinates.',
-        ),
-      ),
-    );
-    return;
-  }
-
+if (zone.coordinates.length < 2) {
+  ScaffoldMessenger.of(context).showSnackBar(
+    const SnackBar(
+      content: Text('Selected zone has invalid coordinates'),
+    ),
+  );
+  return;
+}
   setState(() {
     creatingAccount = true;
   });
@@ -159,9 +149,8 @@ String? selectedCountry;
 
         'zone_id': zone.zoneId,
 
-        'latitude': zone.latitude,
-
-        'longitude': zone.longitude,
+        'latitude': zone.coordinates[1],
+'longitude': zone.coordinates[0],
 
         'available': true,
 
