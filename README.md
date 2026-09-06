@@ -24,3 +24,7 @@ flutter run -d linux
 
 
 ولو Flutter كان شغال أصلًا، اعمل Hot Restart بدل ما تبدأ من الصفر:
+
+
+
+git pull origin master --rebase
