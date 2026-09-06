@@ -1,3 +1,4 @@
+
 import '../models/zone.dart';
 import '../services/zone_service.dart';
 
@@ -8,11 +9,39 @@ class ZonesController {
     required this.zoneService,
   });
 
-  Future<List<Zone>> loadZones() async {
-    final zones = await zoneService.getZones();
+  // ==========================================================
+  // LOAD COUNTRIES
+  // ==========================================================
 
-    print('LOADED ZONES: ${zones.length}');
+  Future<List<Map<String, dynamic>>> loadCountries() async {
+    final countries =
+        await zoneService.getCountries();
+
+    print(
+      'LOADED COUNTRIES: ${countries.length}',
+    );
+
+    return countries;
+  }
+
+  // ==========================================================
+  // LOAD ZONES BY COUNTRY
+  // ==========================================================
+
+  Future<List<Zone>> loadZones(
+    String countryCode,
+  ) async {
+    final zones =
+        await zoneService.getZones(
+      countryCode,
+    );
+
+    print(
+      'LOADED ZONES [$countryCode]: ${zones.length}',
+    );
 
     return zones;
   }
 }
+
+

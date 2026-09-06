@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import '../../services/api_service.dart';
 import '../../models/zone.dart';
 import '../../services/zone_service.dart';
@@ -8,39 +9,83 @@ class SignUpScreenVolunteer extends StatefulWidget {
   const SignUpScreenVolunteer({super.key});
 
   @override
-  State<SignUpScreenVolunteer> createState() => _SignUpScreenVolunteerState();
+  State<SignUpScreenVolunteer> createState() =>
+      _SignUpScreenVolunteerState();
 }
 
-class _SignUpScreenVolunteerState extends State<SignUpScreenVolunteer> {
-  // ===========================================================================
-  // متغير التحكم: اجعله true لإظهار قسم المركبات، أو false لإخفائه في أي وقت لاحقاً
-  // ===========================================================================
+class _SignUpScreenVolunteerState
+    extends State<SignUpScreenVolunteer> {
+  // ==========================================================
+  // SETTINGS
+  // ==========================================================
+
   static const bool _showVehicleSection = true;
 
+  // ==========================================================
+  // FORM
+  // ==========================================================
+
   final _formKey = GlobalKey<FormState>();
-final ApiService _api = ApiService();
 
-final ZonesController zonesController = ZonesController(
-  zoneService: ZoneService(),
-);
+  final ApiService _api = ApiService();
 
-List<Zone> zones = [];
-Zone? selectedZone;
+  final ZonesController zonesController =
+      ZonesController(
+    zoneService: ZoneService(),
+  );
 
-bool loadingZones = true;
-bool creatingAccount = false;
-  final nameController = TextEditingController();
-  final emailController = TextEditingController();
-  final phoneController = TextEditingController();
+  // ==========================================================
+  // COUNTRIES / ZONES
+  // ==========================================================
 
-  final capacityController = TextEditingController(text: '3');
-  final passwordController = TextEditingController();
+  List<Map<String, dynamic>> countries = [];
+
+  List<Zone> zones = [];
+
+  String? selectedCountryCode;
+
+  String? selectedCountry;
+
+  Zone? selectedZone;
+
+  bool loadingCountries = true;
+
+  bool loadingZones = false;
+
+  // ==========================================================
+  // ACCOUNT
+  // ==========================================================
+
+  bool creatingAccount = false;
+
+  final nameController =
+      TextEditingController();
+
+  final emailController =
+      TextEditingController();
+
+  final phoneController =
+      TextEditingController();
+
+  final capacityController =
+      TextEditingController(
+    text: '3',
+  );
+
+  final passwordController =
+      TextEditingController();
 
   bool obscurePassword = true;
-String? selectedCountry;
+
+  // ==========================================================
+  // VOLUNTEER
+  // ==========================================================
+
   String selectedVehicle = 'Car';
-  
-  final List<String> selectedSkills = ['Driving'];
+
+  final List<String> selectedSkills = [
+    'Driving',
+  ];
 
   final List<String> availableSkills = [
     'First aid',
@@ -51,6 +96,10 @@ String? selectedCountry;
     'Shelter setup',
   ];
 
+  // ==========================================================
+  // DISPOSE
+  // ==========================================================
+
   @override
   void dispose() {
     nameController.dispose();
@@ -58,218 +107,398 @@ String? selectedCountry;
     phoneController.dispose();
     capacityController.dispose();
     passwordController.dispose();
+
     super.dispose();
   }
-   @override
+
+  // ==========================================================
+  // INIT
+  // ==========================================================
+
+  @override
   void initState() {
     super.initState();
-    _loadZones();
+
+    _loadCountries();
   }
-Future<void> _loadZones() async {
-  try {
-    final loadedZones = await zonesController.loadZones();
 
-    print('LOADED ZONES: ${loadedZones.length}');
+  // ==========================================================
+  // LOAD COUNTRIES
+  // ==========================================================
 
-    for (final zone in loadedZones) {
+  Future<void> _loadCountries() async {
+    try {
+      final loadedCountries =
+          await zonesController.loadCountries();
+
       print(
-        'ZONE: ${zone.zoneId} | ${zone.name} | ${zone.country}',
+        'LOADED COUNTRIES: ${loadedCountries.length}',
+      );
+
+      if (!mounted) return;
+
+      setState(() {
+        countries = loadedCountries;
+
+        loadingCountries = false;
+      });
+    } catch (e) {
+      print(
+        'LOAD COUNTRIES ERROR: $e',
+      );
+
+      if (!mounted) return;
+
+      setState(() {
+        loadingCountries = false;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Failed to load countries: $e',
+          ),
+        ),
       );
     }
+  }
 
-    if (!mounted) return;
+  // ==========================================================
+  // LOAD ZONES FOR COUNTRY
+  // ==========================================================
 
+  Future<void> _loadZonesForCountry(
+    String countryCode,
+  ) async {
     setState(() {
-      zones = loadedZones;
+      loadingZones = true;
 
-      if (loadedZones.isNotEmpty) {
-        selectedCountry = loadedZones.first.country;
+      zones = [];
+
+      selectedZone = null;
+    });
+
+    try {
+      final loadedZones =
+          await zonesController.loadZones(
+        countryCode,
+      );
+
+      print(
+        'LOADED ZONES [$countryCode]: '
+        '${loadedZones.length}',
+      );
+
+      for (final zone in loadedZones) {
+        print(
+          'ZONE: ${zone.zoneId} | '
+          '${zone.name} | '
+          '${zone.country}',
+        );
       }
 
-      loadingZones = false;
-    });
-  } catch (e) {
-    print('LOAD ZONES ERROR: $e');
+      if (!mounted) return;
 
-    if (!mounted) return;
-
-    setState(() {
-      loadingZones = false;
-    });
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          'Failed to load zones: $e',
-        ),
-      ),
-    );
-  }
-}
-
- Future<void> handleSignUp() async {
-  if (!_formKey.currentState!.validate()) {
-    return;
-  }
-
-  if (selectedZone == null) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Please select a zone.'),
-      ),
-    );
-    return;
-  }
-
-  final zone = selectedZone!;
-
-if (zone.coordinates.length < 2) {
-  ScaffoldMessenger.of(context).showSnackBar(
-    const SnackBar(
-      content: Text('Selected zone has invalid coordinates'),
-    ),
-  );
-  return;
-}
-  setState(() {
-    creatingAccount = true;
-  });
-
-  try {
-    final capacity =
-        int.tryParse(
-          capacityController.text.trim(),
-        ) ??
-        1;
-
-    await _api.post(
-      '/assistance/volunteers/',
-      body: {
-        'name': nameController.text.trim(),
-
-        'zone_id': zone.zoneId,
-
-        'latitude': zone.coordinates[1],
-'longitude': zone.coordinates[0],
-
-        'available': true,
-
-        'responder_level': 'volunteer',
-
-        'vehicle_type': selectedVehicle,
-
-        'capacity': capacity,
-
-        'skills': selectedSkills,
-      },
-    );
-
-    if (!mounted) return;
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text(
-          'Volunteer account created successfully.',
-        ),
-      ),
-    );
-
-    Navigator.pushReplacementNamed(
-      context,
-      '/volunteer-login',
-    );
-  } catch (e) {
-    if (!mounted) return;
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          'Failed to create volunteer account: $e',
-        ),
-      ),
-    );
-  } finally {
-    if (mounted) {
       setState(() {
-        creatingAccount = false;
+        zones = loadedZones;
+
+        loadingZones = false;
       });
+    } catch (e) {
+      print(
+        'LOAD ZONES ERROR [$countryCode]: $e',
+      );
+
+      if (!mounted) return;
+
+      setState(() {
+        loadingZones = false;
+
+        zones = [];
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Failed to load zones: $e',
+          ),
+        ),
+      );
     }
   }
-}
+
+  // ==========================================================
+  // SIGN UP
+  // ==========================================================
+
+  Future<void> handleSignUp() async {
+    if (!_formKey.currentState!.validate()) {
+      return;
+    }
+
+    if (selectedZone == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Please select a zone.',
+          ),
+        ),
+      );
+
+      return;
+    }
+
+    final zone = selectedZone!;
+
+    // --------------------------------------------------------
+    // CHECK COORDINATES
+    // --------------------------------------------------------
+
+    if (zone.coordinates.length < 2) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Selected zone has invalid coordinates',
+          ),
+        ),
+      );
+
+      return;
+    }
+
+    setState(() {
+      creatingAccount = true;
+    });
+
+    try {
+      final capacity =
+          int.tryParse(
+                capacityController.text.trim(),
+              ) ??
+              1;
+
+      // ------------------------------------------------------
+      // CREATE VOLUNTEER
+      // ------------------------------------------------------
+
+      await _api.post(
+        '/assistance/volunteers/',
+        body: {
+          'name':
+              nameController.text.trim(),
+
+          'zone_id':
+              zone.zoneId,
+
+          // Natural Earth:
+          // coordinates = [longitude, latitude]
+
+          'latitude':
+              zone.coordinates[1],
+
+          'longitude':
+              zone.coordinates[0],
+
+          'available':
+              true,
+
+          'responder_level':
+              'volunteer',
+
+          'vehicle_type':
+              selectedVehicle,
+
+          'capacity':
+              capacity,
+
+          'skills':
+              selectedSkills,
+        },
+      );
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Volunteer account created successfully.',
+          ),
+        ),
+      );
+
+      Navigator.pushReplacementNamed(
+        context,
+        '/volunteer-login',
+      );
+    } catch (e) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Failed to create volunteer account: $e',
+          ),
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          creatingAccount = false;
+        });
+      }
+    }
+  }
+
+  // ==========================================================
+  // BUILD
+  // ==========================================================
+
   @override
-  Widget build(BuildContext context) {
+  Widget build(
+    BuildContext context,
+  ) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF6F8FC),
+      backgroundColor:
+          const Color(0xFFF6F8FC),
+
       body: SafeArea(
         child: Column(
           children: [
-            // ==========================================================
+
+            // ==================================================
             // HEADER
-            // ==========================================================
+            // ==================================================
+
             Container(
               height: 52,
+
               width: double.infinity,
-              decoration: const BoxDecoration(
+
+              decoration:
+                  const BoxDecoration(
                 color: Colors.white,
+
                 border: Border(
                   bottom: BorderSide(
-                    color: Color(0xFFD9E0EA),
+                    color:
+                        Color(0xFFD9E0EA),
                   ),
                 ),
               ),
+
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
+                padding:
+                    const EdgeInsets.symmetric(
+                  horizontal: 20,
+                ),
+
                 child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  mainAxisAlignment:
+                      MainAxisAlignment.spaceBetween,
+
                   children: [
+
+                    // ------------------------------------------
+                    // LOGO
+                    // ------------------------------------------
+
                     Row(
                       children: [
+
                         Container(
                           width: 23,
                           height: 23,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: const Color(0xFFD9E5F5),
+
+                          decoration:
+                              BoxDecoration(
+                            shape:
+                                BoxShape.circle,
+
+                            border:
+                                Border.all(
+                              color:
+                                  const Color(
+                                0xFFD9E5F5,
+                              ),
                               width: 2,
                             ),
                           ),
-                          child: const Center(
+
+                          child:
+                              const Center(
                             child: Icon(
-                              Icons.radio_button_checked,
+                              Icons
+                                  .radio_button_checked,
                               size: 14,
-                              color: Color(0xFF2455D6),
+                              color:
+                                  Color(
+                                0xFF2455D6,
+                              ),
                             ),
                           ),
                         ),
-                        const SizedBox(width: 9),
+
+                        const SizedBox(
+                          width: 9,
+                        ),
+
                         const Text(
                           'MONJED',
-                          style: TextStyle(
-                            color: Color(0xFF273348),
+
+                          style:
+                              TextStyle(
+                            color:
+                                Color(
+                              0xFF273348,
+                            ),
                             fontSize: 18,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: -0.5,
+                            fontWeight:
+                                FontWeight.w800,
+                            letterSpacing:
+                                -0.5,
                           ),
                         ),
                       ],
                     ),
+
+                    // ------------------------------------------
+                    // BACK
+                    // ------------------------------------------
+
                     GestureDetector(
-                      onTap: () => Navigator.pop(context),
+                      onTap: () =>
+                          Navigator.pop(
+                        context,
+                      ),
+
                       child: const Row(
                         children: [
+
                           Icon(
                             Icons.arrow_back,
                             size: 16,
-                            color: Color(0xFF718096),
+                            color:
+                                Color(
+                              0xFF718096,
+                            ),
                           ),
-                          SizedBox(width: 4),
+
+                          SizedBox(
+                            width: 4,
+                          ),
+
                           Text(
                             'Back',
-                            style: TextStyle(
-                              color: Color(0xFF718096),
+
+                            style:
+                                TextStyle(
+                              color:
+                                  Color(
+                                0xFF718096,
+                              ),
                               fontSize: 13,
-                              fontWeight: FontWeight.w600,
+                              fontWeight:
+                                  FontWeight.w600,
                             ),
                           ),
                         ],
@@ -280,427 +509,937 @@ if (zone.coordinates.length < 2) {
               ),
             ),
 
-            // ==========================================================
+            // ==================================================
             // CONTENT
-            // ==========================================================
+            // ==================================================
+
             Expanded(
-              child: SingleChildScrollView(
+              child:
+                  SingleChildScrollView(
                 child: Center(
                   child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 420),
+                    constraints:
+                        const BoxConstraints(
+                      maxWidth: 420,
+                    ),
+
                     child: Padding(
-                      padding: const EdgeInsets.symmetric(
+                      padding:
+                          const EdgeInsets
+                              .symmetric(
                         horizontal: 24,
                         vertical: 30,
                       ),
+
                       child: Form(
                         key: _formKey,
+
                         child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                          crossAxisAlignment:
+                              CrossAxisAlignment
+                                  .start,
+
                           children: [
+
+                            // ==================================
+                            // TITLE
+                            // ==================================
+
                             const Text(
                               'VOLUNTEER ACCESS',
-                              style: TextStyle(
-                                color: Color(0xFF5F83D7),
+
+                              style:
+                                  TextStyle(
+                                color:
+                                    Color(
+                                  0xFF5F83D7,
+                                ),
                                 fontSize: 10,
-                                fontWeight: FontWeight.bold,
-                                letterSpacing: 2.0,
+                                fontWeight:
+                                    FontWeight.bold,
+                                letterSpacing:
+                                    2.0,
                               ),
                             ),
-                            const SizedBox(height: 12),
+
+                            const SizedBox(
+                              height: 12,
+                            ),
+
                             const Text(
                               'Become a volunteer',
-                              style: TextStyle(
-                                color: Color(0xFF101827),
+
+                              style:
+                                  TextStyle(
+                                color:
+                                    Color(
+                                  0xFF101827,
+                                ),
                                 fontSize: 27,
-                                fontWeight: FontWeight.w800,
+                                fontWeight:
+                                    FontWeight.w800,
                               ),
                             ),
-                            const SizedBox(height: 8),
+
+                            const SizedBox(
+                              height: 8,
+                            ),
+
                             const Text(
                               'Create a volunteer account on the MONJED API. Matching happens on your private dashboard.',
-                              style: TextStyle(
-                                color: Color(0xFF718096),
+
+                              style:
+                                  TextStyle(
+                                color:
+                                    Color(
+                                  0xFF718096,
+                                ),
                                 fontSize: 13,
                                 height: 1.5,
                               ),
                             ),
-                            const SizedBox(height: 24),
 
-                            // Full Name
-                            const Text(
-                              'Full name',
-                              style: TextStyle(
-                                color: Color(0xFF718096),
-                                fontSize: 10,
-                                fontWeight: FontWeight.w600,
-                                letterSpacing: 1.4,
-                              ),
+                            const SizedBox(
+                              height: 24,
                             ),
-                            const SizedBox(height: 7),
+
+                            // ==================================
+                            // FULL NAME
+                            // ==================================
+
+                            _fieldLabel(
+                              'Full name',
+                            ),
+
+                            const SizedBox(
+                              height: 7,
+                            ),
+
                             TextFormField(
-                              controller: nameController,
-                              decoration: inputDecoration(hint: '', icon: null),
-                              validator: (value) {
-                                if (value == null || value.trim().isEmpty) {
+                              controller:
+                                  nameController,
+
+                              decoration:
+                                  inputDecoration(
+                                hint: '',
+                                icon: null,
+                              ),
+
+                              validator:
+                                  (value) {
+                                if (value ==
+                                        null ||
+                                    value
+                                        .trim()
+                                        .isEmpty) {
                                   return 'Please enter your name';
                                 }
+
                                 return null;
                               },
                             ),
-                            const SizedBox(height: 16),
 
-                            // Email
-                            const Text(
-                              'Email',
-                              style: TextStyle(
-                                color: Color(0xFF718096),
-                                fontSize: 10,
-                                fontWeight: FontWeight.w600,
-                                letterSpacing: 1.4,
-                              ),
+                            const SizedBox(
+                              height: 16,
                             ),
-                            const SizedBox(height: 7),
+
+                            // ==================================
+                            // EMAIL
+                            // ==================================
+
+                            _fieldLabel(
+                              'Email',
+                            ),
+
+                            const SizedBox(
+                              height: 7,
+                            ),
+
                             TextFormField(
-                              controller: emailController,
-                              keyboardType: TextInputType.emailAddress,
-                              decoration: inputDecoration(
-                                hint: 'you@example.com',
-                                icon: Icons.email_outlined,
+                              controller:
+                                  emailController,
+
+                              keyboardType:
+                                  TextInputType
+                                      .emailAddress,
+
+                              decoration:
+                                  inputDecoration(
+                                hint:
+                                    'you@example.com',
+                                icon:
+                                    Icons
+                                        .email_outlined,
                               ),
-                              validator: (value) {
-                                if (value == null || value.trim().isEmpty) {
+
+                              validator:
+                                  (value) {
+                                if (value ==
+                                        null ||
+                                    value
+                                        .trim()
+                                        .isEmpty) {
                                   return 'Please enter your email';
                                 }
-                                if (!value.contains('@')) {
+
+                                if (!value
+                                    .contains(
+                                  '@',
+                                )) {
                                   return 'Enter a valid email';
                                 }
+
                                 return null;
                               },
                             ),
-                            const SizedBox(height: 16),
 
-                            // Phone
-                            const Text(
-                              'Phone',
-                              style: TextStyle(
-                                color: Color(0xFF718096),
-                                fontSize: 10,
-                                fontWeight: FontWeight.w600,
-                                letterSpacing: 1.4,
-                              ),
+                            const SizedBox(
+                              height: 16,
                             ),
-                            const SizedBox(height: 7),
+
+                            // ==================================
+                            // PHONE
+                            // ==================================
+
+                            _fieldLabel(
+                              'Phone',
+                            ),
+
+                            const SizedBox(
+                              height: 7,
+                            ),
+
                             TextFormField(
-                              controller: phoneController,
-                              keyboardType: TextInputType.phone,
-                              decoration: inputDecoration(hint: '+2547XXXXXXXX', icon: null),
-                              validator: (value) {
-                                if (value == null || value.trim().isEmpty) {
+                              controller:
+                                  phoneController,
+
+                              keyboardType:
+                                  TextInputType
+                                      .phone,
+
+                              decoration:
+                                  inputDecoration(
+                                hint:
+                                    '+2547XXXXXXXX',
+                                icon: null,
+                              ),
+
+                              validator:
+                                  (value) {
+                                if (value ==
+                                        null ||
+                                    value
+                                        .trim()
+                                        .isEmpty) {
                                   return 'Please enter your phone number';
                                 }
+
                                 return null;
                               },
                             ),
-                            const SizedBox(height: 16),
 
-DropdownButtonFormField<String>(
-  value: selectedCountry,
-  decoration: inputDecoration(
-    hint: loadingZones
-        ? 'Loading countries...'
-        : 'Select country',
-    icon: Icons.public,
-  ),
-  isExpanded: true,
+                            const SizedBox(
+                              height: 16,
+                            ),
 
-  items: zones
-      .map((zone) => zone.country)
-      .where((country) => country.isNotEmpty)
-      .toSet()
-      .map(
-        (country) => DropdownMenuItem<String>(
-          value: country,
-          child: Text(country),
-        ),
-      )
-      .toList(),
+                            // ==================================
+                            // COUNTRY
+                            // ==================================
 
-  onChanged: (value) {
-    if (value == null) return;
+                            _fieldLabel(
+                              'Country',
+                            ),
 
-    setState(() {
-      selectedCountry = value;
-      selectedZone = null;
-    });
-  },
+                            const SizedBox(
+                              height: 7,
+                            ),
 
-  validator: (value) {
-    if (value == null || value.isEmpty) {
-      return 'Please select your country';
-    }
+                            DropdownButtonFormField<
+                                String>(
+                              value:
+                                  selectedCountryCode,
 
-    return null;
-  },
-),                  const SizedBox(height: 16),
-
-                            // Town / area
-                             DropdownButtonFormField<Zone>(
-  value: selectedZone,
-  decoration: const InputDecoration(
-    labelText: 'Zone / Area',
-  ),
-  isExpanded: true,
-  items: zones
-      .where(
-        (zone) => zone.country == selectedCountry,
-      )
-      .map(
-        (zone) => DropdownMenuItem<Zone>(
-          value: zone,
-          child: Text(zone.name),
-        ),
-      )
-      .toList(),
-  onChanged: loadingZones
-      ? null
-      : (zone) {
-          setState(() {
-            selectedZone = zone;
-          });
-        },
-  validator: (value) {
-    if (value == null) {
-      return 'Please select your zone';
-    }
-
-    return null;
-  },
-),
-                         
-
-                            // ==========================================================
-                            // قسم المركبات والقدرة والمهارات (يظهر/يختفي تلقائياً حسب المتغير)
-                            // ==========================================================
-                            if (_showVehicleSection) ...[
-                              // Vehicle
-                              const Text(
-                                'Vehicle',
-                                style: TextStyle(
-                                  color: Color(0xFF718096),
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w600,
-                                  letterSpacing: 1.4,
-                                ),
+                              decoration:
+                                  inputDecoration(
+                                hint:
+                                    loadingCountries
+                                        ? 'Loading countries...'
+                                        : 'Select country',
+                                icon:
+                                    Icons.public,
                               ),
-                              const SizedBox(height: 7),
-                              DropdownButtonFormField<String>(
-                                value: selectedVehicle,
-                                decoration: inputDecoration(hint: '', icon: null),
-                                items: const [
-                                  DropdownMenuItem(value: 'Car', child: Text('Car')),
-                                  DropdownMenuItem(value: 'Motorcycle', child: Text('Motorcycle')),
-                                  DropdownMenuItem(value: 'Boat', child: Text('Boat')),
-                                  DropdownMenuItem(value: 'None', child: Text('None')),
+
+                              isExpanded:
+                                  true,
+
+                              items:
+                                  countries
+                                      .map(
+                                (
+                                  country,
+                                ) {
+                                  final code =
+                                      country[
+                                                'country_code']
+                                            ?.toString() ??
+                                          '';
+
+                                  final name =
+                                      country[
+                                                'country']
+                                            ?.toString() ??
+                                          '';
+
+                                  return DropdownMenuItem<
+                                      String>(
+                                    value:
+                                        code,
+
+                                    child:
+                                        Text(
+                                      name,
+                                    ),
+                                  );
+                                },
+                              ).toList(),
+
+                              onChanged:
+                                  loadingCountries
+                                      ? null
+                                      : (
+                                          code,
+                                        ) {
+                                          if (code ==
+                                              null) {
+                                            return;
+                                          }
+
+                                          final selected =
+                                              countries
+                                                  .firstWhere(
+                                            (
+                                              country,
+                                            ) =>
+                                                country[
+                                                      'country_code']
+                                                    ?.toString() ==
+                                                code,
+                                          );
+
+                                          setState(
+                                            () {
+                                              selectedCountryCode =
+                                                  code;
+
+                                              selectedCountry =
+                                                  selected[
+                                                          'country']
+                                                      ?.toString();
+
+                                              selectedZone =
+                                                  null;
+
+                                              zones =
+                                                  [];
+                                            },
+                                          );
+
+                                          _loadZonesForCountry(
+                                            code,
+                                          );
+                                        },
+
+                              validator:
+                                  (value) {
+                                if (value ==
+                                        null ||
+                                    value
+                                        .isEmpty) {
+                                  return 'Please select your country';
+                                }
+
+                                return null;
+                              },
+                            ),
+
+                            const SizedBox(
+                              height: 16,
+                            ),
+
+                            // ==================================
+                            // ZONE
+                            // ==================================
+
+                            _fieldLabel(
+                              'Zone / Area',
+                            ),
+
+                            const SizedBox(
+                              height: 7,
+                            ),
+
+                            DropdownButtonFormField<
+                                Zone>(
+                              value:
+                                  selectedZone,
+
+                              decoration:
+                                  inputDecoration(
+                                hint:
+                                    loadingZones
+                                        ? 'Loading zones...'
+                                        : selectedCountryCode ==
+                                                null
+                                            ? 'Select country first'
+                                            : zones
+                                                    .isEmpty
+                                                ? 'No zones available'
+                                                : 'Select zone / area',
+                                icon: Icons
+                                    .location_on_outlined,
+                              ),
+
+                              isExpanded:
+                                  true,
+
+                              items: zones.map(
+                                (
+                                  zone,
+                                ) {
+                                  return DropdownMenuItem<
+                                      Zone>(
+                                    value:
+                                        zone,
+
+                                    child:
+                                        Text(
+                                      zone.name,
+                                    ),
+                                  );
+                                },
+                              ).toList(),
+
+                              onChanged:
+                                  (
+                                        !loadingZones &&
+                                        selectedCountryCode !=
+                                            null &&
+                                        zones.isNotEmpty
+                                      )
+                                      ? (
+                                          zone,
+                                        ) {
+                                          setState(
+                                            () {
+                                              selectedZone =
+                                                  zone;
+                                            },
+                                          );
+                                        }
+                                      : null,
+
+                              validator:
+                                  (value) {
+                                if (value ==
+                                    null) {
+                                  return 'Please select your zone';
+                                }
+
+                                return null;
+                              },
+                            ),
+
+                            // ==================================
+                            // VEHICLE SECTION
+                            // ==================================
+
+                            if (_showVehicleSection) ...[
+
+                              const SizedBox(
+                                height: 16,
+                              ),
+
+                              _fieldLabel(
+                                'Vehicle',
+                              ),
+
+                              const SizedBox(
+                                height: 7,
+                              ),
+
+                              DropdownButtonFormField<
+                                  String>(
+                                value:
+                                    selectedVehicle,
+
+                                decoration:
+                                    inputDecoration(
+                                  hint: '',
+                                  icon: null,
+                                ),
+
+                                items:
+                                    const [
+
+                                  DropdownMenuItem(
+                                    value: 'Car',
+                                    child:
+                                        Text(
+                                      'Car',
+                                    ),
+                                  ),
+
+                                  DropdownMenuItem(
+                                    value:
+                                        'Motorcycle',
+                                    child:
+                                        Text(
+                                      'Motorcycle',
+                                    ),
+                                  ),
+
+                                  DropdownMenuItem(
+                                    value: 'Boat',
+                                    child:
+                                        Text(
+                                      'Boat',
+                                    ),
+                                  ),
+
+                                  DropdownMenuItem(
+                                    value: 'None',
+                                    child:
+                                        Text(
+                                      'None',
+                                    ),
+                                  ),
                                 ],
-                                onChanged: (value) {
+
+                                onChanged:
+                                    (value) {
                                   setState(() {
-                                    selectedVehicle = value ?? 'Car';
+                                    selectedVehicle =
+                                        value ??
+                                            'Car';
                                   });
                                 },
                               ),
-                              const SizedBox(height: 16),
 
-                              // Capacity
-                              const Text(
+                              const SizedBox(
+                                height: 16,
+                              ),
+
+                              // ==================================
+                              // CAPACITY
+                              // ==================================
+
+                              _fieldLabel(
                                 'Capacity',
-                                style: TextStyle(
-                                  color: Color(0xFF718096),
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w600,
-                                  letterSpacing: 1.4,
+                              ),
+
+                              const SizedBox(
+                                height: 7,
+                              ),
+
+                              TextFormField(
+                                controller:
+                                    capacityController,
+
+                                keyboardType:
+                                    TextInputType
+                                        .number,
+
+                                decoration:
+                                    inputDecoration(
+                                  hint: '',
+                                  icon: null,
                                 ),
                               ),
-                              const SizedBox(height: 7),
-                              TextFormField(
-                                controller: capacityController,
-                                keyboardType: TextInputType.number,
-                                decoration: inputDecoration(hint: '', icon: null),
-                              ),
-                              const SizedBox(height: 16),
 
-                              // Skills Chips
+                              const SizedBox(
+                                height: 16,
+                              ),
+
+                              // ==================================
+                              // SKILLS
+                              // ==================================
+
                               Wrap(
                                 spacing: 6,
                                 runSpacing: 6,
-                                children: availableSkills.map((skill) {
-                                  final isSelected = selectedSkills.contains(skill);
-                                  return ChoiceChip(
-                                    label: Text(
+
+                                children:
+                                    availableSkills
+                                        .map(
+                                  (
+                                    skill,
+                                  ) {
+                                    final isSelected =
+                                        selectedSkills
+                                            .contains(
                                       skill,
-                                      style: TextStyle(
-                                        fontSize: 11,
-                                        color: isSelected
-                                            ? const Color(0xFF2455D6)
-                                            : const Color(0xFF718096),
-                                        fontWeight: FontWeight.w500,
+                                    );
+
+                                    return ChoiceChip(
+                                      label:
+                                          Text(
+                                        skill,
+
+                                        style:
+                                            TextStyle(
+                                          fontSize:
+                                              11,
+
+                                          color:
+                                              isSelected
+                                                  ? const Color(
+                                                      0xFF2455D6,
+                                                    )
+                                                  : const Color(
+                                                      0xFF718096,
+                                                    ),
+
+                                          fontWeight:
+                                              FontWeight.w500,
+                                        ),
                                       ),
-                                    ),
-                                    selected: isSelected,
-                                    selectedColor: const Color(0xFFE2EBF8),
-                                    backgroundColor: Colors.white,
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(6),
-                                      side: BorderSide(
-                                        color: isSelected
-                                            ? const Color(0xFF2455D6)
-                                            : const Color(0xFFD6DEE9),
+
+                                      selected:
+                                          isSelected,
+
+                                      selectedColor:
+                                          const Color(
+                                        0xFFE2EBF8,
                                       ),
-                                    ),
-                                    showCheckmark: false,
-                                    onSelected: (selected) {
-                                      setState(() {
-                                        if (selected) {
-                                          selectedSkills.add(skill);
-                                        } else {
-                                          selectedSkills.remove(skill);
-                                        }
-                                      });
-                                    },
-                                  );
-                                }).toList(),
+
+                                      backgroundColor:
+                                          Colors
+                                              .white,
+
+                                      shape:
+                                          RoundedRectangleBorder(
+                                        borderRadius:
+                                            BorderRadius
+                                                .circular(
+                                          6,
+                                        ),
+
+                                        side:
+                                            BorderSide(
+                                          color:
+                                              isSelected
+                                                  ? const Color(
+                                                      0xFF2455D6,
+                                                    )
+                                                  : const Color(
+                                                      0xFFD6DEE9,
+                                                    ),
+                                        ),
+                                      ),
+
+                                      showCheckmark:
+                                          false,
+
+                                      onSelected:
+                                          (
+                                            selected,
+                                          ) {
+                                            setState(
+                                              () {
+                                                if (selected) {
+                                                  if (!selectedSkills
+                                                      .contains(
+                                                    skill,
+                                                  )) {
+                                                    selectedSkills
+                                                        .add(
+                                                      skill,
+                                                    );
+                                                  }
+                                                } else {
+                                                  selectedSkills
+                                                      .remove(
+                                                    skill,
+                                                  );
+                                                }
+                                              },
+                                            );
+                                          },
+                                    );
+                                  },
+                                ).toList(),
                               ),
-                              const SizedBox(height: 16),
                             ],
 
-                            // Password
-                            const Text(
-                              'Password',
-                              style: TextStyle(
-                                color: Color(0xFF718096),
-                                fontSize: 10,
-                                fontWeight: FontWeight.w600,
-                                letterSpacing: 1.4,
-                              ),
+                            const SizedBox(
+                              height: 16,
                             ),
-                            const SizedBox(height: 7),
+
+                            // ==================================
+                            // PASSWORD
+                            // ==================================
+
+                            _fieldLabel(
+                              'Password',
+                            ),
+
+                            const SizedBox(
+                              height: 7,
+                            ),
+
                             TextFormField(
-                              controller: passwordController,
-                              obscureText: obscurePassword,
-                              decoration: InputDecoration(
-                                hintText: 'At least 8 characters',
-                                hintStyle: const TextStyle(
-                                  color: Color(0xFFB1BDCC),
+                              controller:
+                                  passwordController,
+
+                              obscureText:
+                                  obscurePassword,
+
+                              decoration:
+                                  InputDecoration(
+                                hintText:
+                                    'At least 8 characters',
+
+                                hintStyle:
+                                    const TextStyle(
+                                  color:
+                                      Color(
+                                    0xFFB1BDCC,
+                                  ),
                                   fontSize: 13,
                                 ),
-                                prefixIcon: const Icon(
-                                  Icons.lock_outline,
+
+                                prefixIcon:
+                                    const Icon(
+                                  Icons
+                                      .lock_outline,
                                   size: 17,
-                                  color: Color(0xFF8291A5),
+                                  color:
+                                      Color(
+                                    0xFF8291A5,
+                                  ),
                                 ),
-                                suffixIcon: IconButton(
+
+                                suffixIcon:
+                                    IconButton(
                                   icon: Icon(
                                     obscurePassword
-                                        ? Icons.visibility_outlined
-                                        : Icons.visibility_off_outlined,
+                                        ? Icons
+                                            .visibility_outlined
+                                        : Icons
+                                            .visibility_off_outlined,
+
                                     size: 18,
-                                    color: const Color(0xFF8291A5),
+
+                                    color:
+                                        const Color(
+                                      0xFF8291A5,
+                                    ),
                                   ),
-                                  onPressed: () {
-                                    setState(() {
-                                      obscurePassword = !obscurePassword;
-                                    });
+
+                                  onPressed:
+                                      () {
+                                    setState(
+                                      () {
+                                        obscurePassword =
+                                            !obscurePassword;
+                                      },
+                                    );
                                   },
                                 ),
-                                filled: true,
-                                fillColor: Colors.white,
-                                contentPadding: const EdgeInsets.symmetric(
+
+                                filled:
+                                    true,
+
+                                fillColor:
+                                    Colors
+                                        .white,
+
+                                contentPadding:
+                                    const EdgeInsets
+                                        .symmetric(
                                   vertical: 14,
                                 ),
-                                enabledBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(6),
-                                  borderSide: const BorderSide(
-                                    color: Color(0xFFD6DEE9),
+
+                                enabledBorder:
+                                    OutlineInputBorder(
+                                  borderRadius:
+                                      BorderRadius
+                                          .circular(
+                                    6,
+                                  ),
+
+                                  borderSide:
+                                      const BorderSide(
+                                    color:
+                                        Color(
+                                      0xFFD6DEE9,
+                                    ),
                                   ),
                                 ),
-                                focusedBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(6),
-                                  borderSide: const BorderSide(
-                                    color: Color(0xFF2455D6),
+
+                                focusedBorder:
+                                    OutlineInputBorder(
+                                  borderRadius:
+                                      BorderRadius
+                                          .circular(
+                                    6,
+                                  ),
+
+                                  borderSide:
+                                      const BorderSide(
+                                    color:
+                                        Color(
+                                      0xFF2455D6,
+                                    ),
                                   ),
                                 ),
                               ),
-                              validator: (value) {
-                                if (value == null || value.isEmpty) {
+
+                              validator:
+                                  (value) {
+                                if (value ==
+                                        null ||
+                                    value
+                                        .isEmpty) {
                                   return 'Please enter a password';
                                 }
-                                if (value.length < 8) {
+
+                                if (value.length <
+                                    8) {
                                   return 'Password must be at least 8 characters';
                                 }
+
                                 return null;
                               },
                             ),
-                            const SizedBox(height: 24),
 
-                            // Submit Button
+                            const SizedBox(
+                              height: 24,
+                            ),
+
+                            // ==================================
+                            // CREATE ACCOUNT
+                            // ==================================
+
                             SizedBox(
-                              width: double.infinity,
+                              width:
+                                  double.infinity,
+
                               height: 42,
-                              child: ElevatedButton(
-onPressed: creatingAccount ? null : handleSignUp,
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: const Color(0xFF2455D6),
-                                  foregroundColor: Colors.white,
+
+                              child:
+                                  ElevatedButton(
+                                onPressed:
+                                    creatingAccount
+                                        ? null
+                                        : handleSignUp,
+
+                                style:
+                                    ElevatedButton
+                                        .styleFrom(
+                                  backgroundColor:
+                                      const Color(
+                                    0xFF2455D6,
+                                  ),
+
+                                  foregroundColor:
+                                      Colors
+                                          .white,
+
                                   elevation: 0,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(6),
+
+                                  shape:
+                                      RoundedRectangleBorder(
+                                    borderRadius:
+                                        BorderRadius
+                                            .circular(
+                                      6,
+                                    ),
                                   ),
                                 ),
-                               child: creatingAccount
-    ? const SizedBox(
-        width: 18,
-        height: 18,
-        child: CircularProgressIndicator(
-          strokeWidth: 2,
-          color: Colors.white,
-        ),
-      )
-    : const Text(
-        'Create volunteer account',
-        style: TextStyle(
-          fontSize: 13,
-          fontWeight: FontWeight.w700,
-        ),
-      ),
+
+                                child:
+                                    creatingAccount
+                                        ? const SizedBox(
+                                            width:
+                                                18,
+                                            height:
+                                                18,
+                                            child:
+                                                CircularProgressIndicator(
+                                              strokeWidth:
+                                                  2,
+                                              color:
+                                                  Colors.white,
+                                            ),
+                                          )
+                                        : const Text(
+                                            'Create volunteer account',
+
+                                            style:
+                                                TextStyle(
+                                              fontSize:
+                                                  13,
+                                              fontWeight:
+                                                  FontWeight.w700,
+                                            ),
+                                          ),
                               ),
                             ),
-                            const SizedBox(height: 20),
 
-                            // Footer link
+                            const SizedBox(
+                              height: 20,
+                            ),
+
+                            // ==================================
+                            // LOGIN
+                            // ==================================
+
                             Center(
                               child: Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
+                                mainAxisAlignment:
+                                    MainAxisAlignment
+                                        .center,
+
                                 children: [
+
                                   const Text(
                                     'Already registered? ',
-                                    style: TextStyle(
-                                      color: Color(0xFF718096),
+
+                                    style:
+                                        TextStyle(
+                                      color:
+                                          Color(
+                                        0xFF718096,
+                                      ),
                                       fontSize: 13,
                                     ),
                                   ),
+
                                   GestureDetector(
                                     onTap: () {
-                                      Navigator.pushReplacementNamed(
+                                      Navigator
+                                          .pushReplacementNamed(
                                         context,
                                         '/volunteer-login',
                                       );
                                     },
-                                    child: const Text(
+
+                                    child:
+                                        const Text(
                                       'Log in',
-                                      style: TextStyle(
-                                        color: Color(0xFF2455D6),
-                                        fontSize: 13,
-                                        fontWeight: FontWeight.w600,
+
+                                      style:
+                                          TextStyle(
+                                        color:
+                                            Color(
+                                          0xFF2455D6,
+                                        ),
+                                        fontSize:
+                                            13,
+                                        fontWeight:
+                                            FontWeight
+                                                .w600,
                                       ),
                                     ),
                                   ),
@@ -716,40 +1455,78 @@ onPressed: creatingAccount ? null : handleSignUp,
               ),
             ),
 
-            // Footer bar
+            // ==================================================
+            // FOOTER
+            // ==================================================
+
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-              width: double.infinity,
-              decoration: const BoxDecoration(
+              padding:
+                  const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 10,
+              ),
+
+              width:
+                  double.infinity,
+
+              decoration:
+                  const BoxDecoration(
                 border: Border(
                   top: BorderSide(
-                    color: Color(0xFFD9E0EA),
+                    color:
+                        Color(0xFFD9E0EA),
                   ),
                 ),
               ),
+
               child: const Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                mainAxisAlignment:
+                    MainAxisAlignment
+                        .spaceBetween,
+
                 children: [
+
                   Expanded(
                     child: Text(
                       'FLOOD AND EARTHQUAKE SCORES ARE NEVER BLENDED',
-                      style: TextStyle(
-                        color: Color(0xFF8B9AAF),
+
+                      style:
+                          TextStyle(
+                        color:
+                            Color(
+                          0xFF8B9AAF,
+                        ),
                         fontSize: 7.5,
-                        fontWeight: FontWeight.w600,
-                        letterSpacing: 0.5,
+                        fontWeight:
+                            FontWeight.w600,
+                        letterSpacing:
+                            0.5,
                       ),
-                      overflow: TextOverflow.ellipsis,
+
+                      overflow:
+                          TextOverflow
+                              .ellipsis,
                     ),
                   ),
-                  SizedBox(width: 4),
+
+                  SizedBox(
+                    width: 4,
+                  ),
+
                   Text(
                     'LIVE API · COMMUNITY REPORT · ANALYZE',
-                    style: TextStyle(
-                      color: Color(0xFF8B9AAF),
+
+                    style:
+                        TextStyle(
+                      color:
+                          Color(
+                        0xFF8B9AAF,
+                      ),
                       fontSize: 7.5,
-                      fontWeight: FontWeight.w600,
-                      letterSpacing: 0.5,
+                      fontWeight:
+                          FontWeight.w600,
+                      letterSpacing:
+                          0.5,
                     ),
                   ),
                 ],
@@ -761,41 +1538,99 @@ onPressed: creatingAccount ? null : handleSignUp,
     );
   }
 
+  // ==========================================================
+  // FIELD LABEL
+  // ==========================================================
+
+  Widget _fieldLabel(
+    String text,
+  ) {
+    return Text(
+      text,
+
+      style:
+          const TextStyle(
+        color:
+            Color(0xFF718096),
+        fontSize: 10,
+        fontWeight:
+            FontWeight.w600,
+        letterSpacing: 1.4,
+      ),
+    );
+  }
+
+  // ==========================================================
+  // INPUT DECORATION
+  // ==========================================================
+
   InputDecoration inputDecoration({
     required String hint,
     required IconData? icon,
   }) {
     return InputDecoration(
       hintText: hint,
-      hintStyle: const TextStyle(
-        color: Color(0xFFB1BDCC),
+
+      hintStyle:
+          const TextStyle(
+        color:
+            Color(0xFFB1BDCC),
         fontSize: 13,
       ),
-      prefixIcon: icon != null
-          ? Icon(
-              icon,
-              size: 17,
-              color: const Color(0xFF8291A5),
-            )
-          : null,
+
+      prefixIcon:
+          icon != null
+              ? Icon(
+                  icon,
+                  size: 17,
+                  color:
+                      const Color(
+                    0xFF8291A5,
+                  ),
+                )
+              : null,
+
       filled: true,
-      fillColor: Colors.white,
-      contentPadding: const EdgeInsets.symmetric(
+
+      fillColor:
+          Colors.white,
+
+      contentPadding:
+          const EdgeInsets
+              .symmetric(
         vertical: 14,
         horizontal: 12,
       ),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(6),
-        borderSide: const BorderSide(
-          color: Color(0xFFD6DEE9),
+
+      enabledBorder:
+          OutlineInputBorder(
+        borderRadius:
+            BorderRadius.circular(
+          6,
+        ),
+
+        borderSide:
+            const BorderSide(
+          color:
+              Color(0xFFD6DEE9),
         ),
       ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(6),
-        borderSide: const BorderSide(
-          color: Color(0xFF2455D6),
+
+      focusedBorder:
+          OutlineInputBorder(
+        borderRadius:
+            BorderRadius.circular(
+          6,
+        ),
+
+        borderSide:
+            const BorderSide(
+          color:
+              Color(0xFF2455D6),
         ),
       ),
     );
   }
 }
+
+

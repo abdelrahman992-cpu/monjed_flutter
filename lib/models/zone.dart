@@ -18,15 +18,26 @@ class Zone {
   });
 
   factory Zone.fromJson(Map<String, dynamic> json) {
+    final coordinatesRaw = json['coordinates'];
+
+    if (coordinatesRaw is! List ||
+        coordinatesRaw.length < 2) {
+      throw Exception(
+        'Invalid coordinates for zone: ${json['zone_id']}',
+      );
+    }
+
     return Zone(
-      zoneId: json['zone_id'] as String,
-      name: json['name'] as String,
-      country: json['country'] as String,
-      countryCode: json['country_code'] as String?,
-      region: json['region'] as String?,
-      subregion: json['subregion'] as String?,
-      coordinates: (json['coordinates'] as List)
-          .map((e) => (e as num).toDouble())
+      zoneId: json['zone_id']?.toString() ?? '',
+      name: json['name']?.toString() ?? '',
+      country: json['country']?.toString() ?? '',
+      countryCode: json['country_code']?.toString(),
+      region: json['region']?.toString(),
+      subregion: json['subregion']?.toString(),
+      coordinates: coordinatesRaw
+          .map(
+            (value) => (value as num).toDouble(),
+          )
           .toList(),
     );
   }

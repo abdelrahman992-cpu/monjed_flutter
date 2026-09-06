@@ -8,8 +8,34 @@ class ZoneService {
     ApiService? api,
   }) : api = api ?? ApiService();
 
-  Future<List<Zone>> getZones() async {
-    final data = await api.get('/dashboard/zones');
+  // =========================
+  // GET COUNTRIES
+  // =========================
+
+  Future<List<Map<String, dynamic>>> getCountries() async {
+    final data = await api.get('/dashboard/countries');
+
+    if (data is! List) {
+      throw Exception('Invalid countries response');
+    }
+
+    return data
+        .map(
+          (item) => Map<String, dynamic>.from(item),
+        )
+        .toList();
+  }
+
+  // =========================
+  // GET ZONES BY COUNTRY
+  // =========================
+
+  Future<List<Zone>> getZones(
+    String countryCode,
+  ) async {
+    final data = await api.get(
+      '/dashboard/zones?country_code=${Uri.encodeQueryComponent(countryCode)}',
+    );
 
     if (data is! List) {
       throw Exception('Invalid zones response');
