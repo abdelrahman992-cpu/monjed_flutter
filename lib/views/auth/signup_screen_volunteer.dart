@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 
 import '../../services/api_service.dart';
 import '../../models/zone.dart';
-import '../../services/zone_service.dart';
 import '../../controllers/zone_controller.dart';
 
 class SignUpScreenVolunteer extends StatefulWidget {
@@ -29,11 +28,7 @@ class _SignUpScreenVolunteerState
 
   final ApiService _api = ApiService();
 
-  final ZonesController zonesController =
-      ZonesController(
-    zoneService: ZoneService(),
-  );
-
+final ZonesController zonesController = ZonesController();
   // ==========================================================
   // COUNTRIES / ZONES
   // ==========================================================

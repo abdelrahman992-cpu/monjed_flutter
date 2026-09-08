@@ -1,22 +1,22 @@
 import '../core/network/api_service.dart';
 
-class DecisionController {
+class PipelineController {
   final ApiService api = ApiService();
 
-  Future<dynamic> evaluate(
+  Future<dynamic> flood(
     Map<String, dynamic> body,
   ) async {
     return await api.post(
-      '/decision/evaluate',
+      '/pipeline/flood',
       body: body,
     );
   }
 
-  Future<dynamic> fromRisk(
+  Future<dynamic> earthquake(
     Map<String, dynamic> body,
   ) async {
     return await api.post(
-      '/decision/from-risk',
+      '/pipeline/earthquake',
       body: body,
     );
   }

@@ -247,9 +247,15 @@ Future<void> _loadCountries() async {
 
          if (!isMobile) ...[
   _navButton(
-    'About us',
-    () => _openSection('About us'),
-  ),
+  'About us',
+  () {
+    Navigator.pushNamed(
+      context,
+      AppRoutes.about,
+    );
+  },
+),
+
 
   _navButton(
     'Contact us',

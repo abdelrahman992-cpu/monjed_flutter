@@ -1,30 +1,43 @@
-import '../models/assistance_request.dart';
-import '../repositories/assistance_repository.dart';
+import '../core/network/api_service.dart';
 
 class AssistanceController {
-  final AssistanceRepository repository;
+  final ApiService api = ApiService();
 
-  AssistanceController({required this.repository});
+  Future<dynamic> getRequests() async {
+    return await api.get('/assistance/requests');
+  }
 
-  Future<AssistanceRequest> createAssistanceRequest({
-    required String zoneId,
-    required String location,
-    double? latitude,
-    double? longitude,
-    required String hazard,
-    required String requestType,
-    required String priority,
-    required String description,
-  }) async {
-    return await repository.createAssistanceRequest(
-      zoneId: zoneId,
-      location: location,
-      latitude: latitude,
-      longitude: longitude,
-      hazard: hazard,
-      requestType: requestType,
-      priority: priority,
-      description: description,
+  Future<dynamic> getPendingRequests() async {
+    return await api.get('/assistance/requests/pending');
+  }
+
+  Future<dynamic> getRequest(String requestId) async {
+    return await api.get(
+      '/assistance/requests/$requestId',
+    );
+  }
+
+  Future<dynamic> matchRequest(
+    String requestId,
+  ) async {
+    return await api.post(
+      '/assistance/requests/$requestId/match',
+    );
+  }
+
+  Future<dynamic> startRequest(
+    String requestId,
+  ) async {
+    return await api.post(
+      '/assistance/requests/$requestId/start',
+    );
+  }
+
+  Future<dynamic> resolveRequest(
+    String requestId,
+  ) async {
+    return await api.post(
+      '/assistance/requests/$requestId/resolve',
     );
   }
 }

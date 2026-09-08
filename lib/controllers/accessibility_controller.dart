@@ -1,18 +1,14 @@
-import '../models/accessibility.dart';
-import '../repositories/accessibility_repository.dart';
+import '../core/network/api_service.dart';
 
 class AccessibilityController {
-  final AccessibilityRepository repository;
+  final ApiService api = ApiService();
 
-  AccessibilityController({required this.repository});
-
-  Future<AccessibleActionPlan> adaptAction({
-    required Map<String, dynamic> decision,
-    required List<String> accessibilityNeeds,
-  }) async {
-    return await repository.adaptAction(
-      decision: decision,
-      accessibilityNeeds: accessibilityNeeds,
+  Future<dynamic> adapt(
+    Map<String, dynamic> body,
+  ) async {
+    return await api.post(
+      '/accessibility/adapt',
+      body: body,
     );
   }
 }

@@ -2,26 +2,19 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 class ApiService {
+  // Linux Desktop
   static const String baseUrl = 'http://127.0.0.1:8000';
-
-  // =========================
-  // GET
-  // =========================
 
   Future<dynamic> get(String endpoint) async {
     final response = await http.get(
       Uri.parse('$baseUrl$endpoint'),
       headers: {
-        'Accept': 'application/json',
+        'Content-Type': 'application/json',
       },
     );
 
     return _handleResponse(response);
   }
-
-  // =========================
-  // POST
-  // =========================
 
   Future<dynamic> post(
     String endpoint, {
@@ -30,68 +23,47 @@ class ApiService {
     final response = await http.post(
       Uri.parse('$baseUrl$endpoint'),
       headers: {
-        'Accept': 'application/json',
         'Content-Type': 'application/json',
       },
-      body: body != null ? jsonEncode(body) : null,
+      body: body == null ? null : jsonEncode(body),
     );
 
     return _handleResponse(response);
   }
 
-  // =========================
-  // PATCH
-  // =========================
-
-  Future<dynamic> patch(
+  Future<dynamic> put(
     String endpoint, {
     Map<String, dynamic>? body,
   }) async {
-    final response = await http.patch(
+    final response = await http.put(
       Uri.parse('$baseUrl$endpoint'),
       headers: {
-        'Accept': 'application/json',
         'Content-Type': 'application/json',
       },
-      body: body != null ? jsonEncode(body) : null,
+      body: body == null ? null : jsonEncode(body),
     );
 
     return _handleResponse(response);
   }
-
-  // =========================
-  // DELETE
-  // =========================
 
   Future<dynamic> delete(String endpoint) async {
     final response = await http.delete(
       Uri.parse('$baseUrl$endpoint'),
       headers: {
-        'Accept': 'application/json',
+        'Content-Type': 'application/json',
       },
     );
 
     return _handleResponse(response);
   }
 
-  // =========================
-  // RESPONSE
-  // =========================
-
   dynamic _handleResponse(http.Response response) {
-    dynamic data;
-
-    if (response.body.isNotEmpty) {
-      try {
-        data = jsonDecode(response.body);
-      } catch (_) {
-        data = response.body;
+    if (response.statusCode >= 200 && response.statusCode < 300) {
+      if (response.body.isEmpty) {
+        return null;
       }
-    }
 
-    if (response.statusCode >= 200 &&
-        response.statusCode < 300) {
-      return data;
+      return jsonDecode(response.body);
     }
 
     throw Exception(

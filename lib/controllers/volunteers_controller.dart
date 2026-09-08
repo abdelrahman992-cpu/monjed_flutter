@@ -1,33 +1,23 @@
-import '../models/volunteer.dart';
-import '../repositories/volunteers_repository.dart';
+import '../core/network/api_service.dart';
 
-class VolunteerController {
-  final VolunteerRepository repository;
+class VolunteersController {
+  final ApiService api = ApiService();
 
-  VolunteerController({required this.repository});
+  Future<dynamic> getVolunteers() async {
+    return await api.get('/assistance/volunteers');
+  }
 
-  Future<VolunteerRecord> createVolunteer({
-    required String zoneId,
-    required String name,
-    double? latitude,
-    double? longitude,
-    bool available = true,
-    String responderLevel = 'volunteer',
-    String? vehicleType,
-    int capacity = 1,
-    List<String>? skills,
-  }) async {
-    return await repository.createVolunteer(
-      zoneId: zoneId,
-      name: name,
-      latitude: latitude,
-      longitude: longitude,
-      available: available,
-      responderLevel: responderLevel,
-      vehicleType: vehicleType,
-      capacity: capacity,
-      skills: skills,
+  Future<dynamic> getVolunteer(String volunteerId) async {
+    return await api.get(
+      '/assistance/volunteers/$volunteerId',
+    );
+  }
+
+  Future<dynamic> getVolunteerRequests(
+    String volunteerId,
+  ) async {
+    return await api.get(
+      '/assistance/volunteers/$volunteerId/requests',
     );
   }
 }
-

@@ -1,47 +1,71 @@
-
+import '../services/api_service.dart';
 import '../models/zone.dart';
-import '../services/zone_service.dart';
 
 class ZonesController {
-  final ZoneService zoneService;
+  final ApiService api = ApiService();
 
-  ZonesController({
-    required this.zoneService,
-  });
+  Future<List<Zone>> getZones() async {
+    final response = await api.get('/zones');
 
-  // ==========================================================
-  // LOAD COUNTRIES
-  // ==========================================================
+    if (response is! List) {
+      throw Exception('Invalid zones response');
+    }
+
+    return response
+        .map(
+          (item) => Zone.fromJson(
+            Map<String, dynamic>.from(item),
+          ),
+        )
+        .toList();
+  }
 
   Future<List<Map<String, dynamic>>> loadCountries() async {
-    final countries =
-        await zoneService.getCountries();
+    final zones = await getZones();
 
-    print(
-      'LOADED COUNTRIES: ${countries.length}',
-    );
+    final Map<String, Map<String, dynamic>> countries = {};
 
-    return countries;
+    for (final zone in zones) {
+      final code = zone.countryCode?.trim();
+      final name = zone.country.trim();
+
+      if (name.isEmpty) {
+        continue;
+      }
+
+      final key = (code != null && code.isNotEmpty)
+          ? code
+          : name;
+
+      countries[key] = {
+        'country': name,
+        'country_code': code,
+      };
+    }
+
+    return countries.values.toList();
   }
 
-  // ==========================================================
-  // LOAD ZONES BY COUNTRY
-  // ==========================================================
+  Future<List<Zone>> loadZones(String countryCode) async {
+    final zones = await getZones();
 
-  Future<List<Zone>> loadZones(
-    String countryCode,
-  ) async {
-    final zones =
-        await zoneService.getZones(
-      countryCode,
+    return zones.where((zone) {
+      return zone.countryCode?.toLowerCase() ==
+          countryCode.toLowerCase();
+    }).toList();
+  }
+
+  Future<Zone> loadZone(String zoneId) async {
+    final response = await api.get(
+      '/dashboard/zones/$zoneId',
     );
 
-    print(
-      'LOADED ZONES [$countryCode]: ${zones.length}',
-    );
+    if (response is! Map) {
+      throw Exception('Invalid zone response');
+    }
 
-    return zones;
+    return Zone.fromJson(
+      Map<String, dynamic>.from(response),
+    );
   }
 }
-
-

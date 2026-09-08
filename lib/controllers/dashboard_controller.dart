@@ -1,35 +1,39 @@
-import '../repositories/dashboard_repository.dart';
+import '../core/network/api_service.dart';
 
 class DashboardController {
-  final DashboardRepository repository;
-
-  DashboardController({required this.repository});
+  final ApiService api = ApiService();
 
   Future<dynamic> getOverview() async {
-    return await repository.getOverview();
+    return await api.get('/dashboard/overview');
   }
 
   Future<dynamic> getRisks() async {
-    return await repository.getRisks();
+    return await api.get('/dashboard/risks');
   }
 
   Future<dynamic> getDecisions() async {
-    return await repository.getDecisions();
+    return await api.get('/dashboard/decisions');
   }
 
   Future<dynamic> getAlerts() async {
-    return await repository.getAlerts();
+    return await api.get('/dashboard/alerts');
   }
 
-  Future<dynamic> getZone({
-    required String zoneId,
-  }) async {
-    return await repository.getZone(
-      zoneId: zoneId,
+  Future<dynamic> getCountries() async {
+    return await api.get('/dashboard/countries');
+  }
+
+  Future<dynamic> getZones() async {
+    return await api.get('/dashboard/zones');
+  }
+
+  Future<dynamic> getZone(String zoneId) async {
+    return await api.get(
+      '/dashboard/zones/$zoneId',
     );
   }
 
   Future<dynamic> getRecipientsCount() async {
-    return await repository.getRecipientsCount();
+    return await api.get('/dashboard/recipients/count');
   }
 }
