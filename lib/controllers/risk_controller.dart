@@ -1,17 +1,23 @@
-import '../core/network/api_service.dart';
-
+import '../services/api_service.dart';
+import '../models/Risk_Reports_Decision_Assistance_Models.dart';
 class RiskController {
   final ApiService api = ApiService();
 
-  Future<dynamic> getRisk() async {
-    return await api.get('/api/risk/');
+  Future<dynamic> assessFlood(
+    Map<String, dynamic> body,
+  ) async {
+    return await api.post(
+      '/risk/flood',
+      body: body,
+    );
   }
 
-  Future<dynamic> getFloodRisk() async {
-    return await api.get('/risk/flood');
-  }
-
-  Future<dynamic> getEarthquakeRisk() async {
-    return await api.get('/risk/earthquake');
+  Future<dynamic> assessEarthquake(
+    Map<String, dynamic> body,
+  ) async {
+    return await api.post(
+      '/risk/earthquake',
+      body: body,
+    );
   }
 }

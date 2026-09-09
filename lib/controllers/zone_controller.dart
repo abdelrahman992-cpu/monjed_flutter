@@ -1,71 +1,92 @@
+
 import '../services/api_service.dart';
 import '../models/zone.dart';
 
 class ZonesController {
   final ApiService api = ApiService();
 
+  // ==========================================================
+  // GET ALL ZONES
+  // ==========================================================
+
   Future<List<Zone>> getZones() async {
     final response = await api.get('/zones');
 
     if (response is! List) {
-      throw Exception('Invalid zones response');
+      throw Exception('Invalid /zones response');
     }
 
     return response
         .map(
-          (item) => Zone.fromJson(
-            Map<String, dynamic>.from(item),
+          (json) => Zone.fromJson(
+            Map<String, dynamic>.from(json),
           ),
         )
         .toList();
   }
 
+  // ==========================================================
+  // LOAD COUNTRIES
+  // ==========================================================
+  //
+  // The signup screen expects:
+  // List<Map<String, dynamic>>
+  //
+  // We keep countryCode because the screen passes it to
+  // loadZones(countryCode).
+
   Future<List<Map<String, dynamic>>> loadCountries() async {
     final zones = await getZones();
 
-    final Map<String, Map<String, dynamic>> countries = {};
+    final Map<String, Map<String, dynamic>> uniqueCountries = {};
 
     for (final zone in zones) {
-      final code = zone.countryCode?.trim();
-      final name = zone.country.trim();
+      final code = zone.countryCode ?? zone.country;
 
-      if (name.isEmpty) {
+      if (code.isEmpty) {
         continue;
       }
 
-      final key = (code != null && code.isNotEmpty)
-          ? code
-          : name;
-
-      countries[key] = {
-        'country': name,
-        'country_code': code,
+      uniqueCountries[code] = {
+        'country': zone.country,
+        'country_code': zone.countryCode,
       };
     }
 
-    return countries.values.toList();
+    final countries = uniqueCountries.values.toList();
+
+    countries.sort(
+      (a, b) => (a['country'] ?? '')
+          .toString()
+          .compareTo(
+            (b['country'] ?? '').toString(),
+          ),
+    );
+
+    return countries;
   }
+
+  // ==========================================================
+  // LOAD ZONES FOR COUNTRY
+  // ==========================================================
+  //
+  // signup_screen_volunteer.dart passes countryCode here.
+  //
+  // Since the API currently exposes GET /zones,
+  // filtering is done locally.
 
   Future<List<Zone>> loadZones(String countryCode) async {
     final zones = await getZones();
 
     return zones.where((zone) {
-      return zone.countryCode?.toLowerCase() ==
-          countryCode.toLowerCase();
+      if (zone.countryCode != null &&
+          zone.countryCode!.isNotEmpty) {
+        return zone.countryCode == countryCode;
+      }
+
+      // Fallback if backend doesn't provide country_code.
+      return zone.country == countryCode;
     }).toList();
   }
-
-  Future<Zone> loadZone(String zoneId) async {
-    final response = await api.get(
-      '/dashboard/zones/$zoneId',
-    );
-
-    if (response is! Map) {
-      throw Exception('Invalid zone response');
-    }
-
-    return Zone.fromJson(
-      Map<String, dynamic>.from(response),
-    );
-  }
 }
+

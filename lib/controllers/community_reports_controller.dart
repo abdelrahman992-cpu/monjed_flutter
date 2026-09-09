@@ -1,17 +1,7 @@
 import '../services/api_service.dart';
-import '../models/Risk_Reports_Decision_Assistance_Models.dart';
-class ReportsController {
+
+class CommunityReportsController {
   final ApiService api = ApiService();
-
-  Future<dynamic> getReports() async {
-    return await api.get('/api/community-reports');
-  }
-
-  Future<dynamic> getRecentReports(String zoneId) async {
-    return await api.get(
-      '/api/community-reports/recent/$zoneId',
-    );
-  }
 
   Future<dynamic> analyzeReport(
     Map<String, dynamic> body,
@@ -31,10 +21,16 @@ class ReportsController {
     );
   }
 
+  Future<dynamic> getReports() async {
+    return await api.get(
+      '/api/community-reports',
+    );
+  }
+
   Future<dynamic> verifyReport(
     String reportId,
   ) async {
-    return await api.post(
+    return await api.patch(
       '/api/community-reports/$reportId/verify',
     );
   }
@@ -42,8 +38,16 @@ class ReportsController {
   Future<dynamic> resolveReport(
     String reportId,
   ) async {
-    return await api.post(
+    return await api.patch(
       '/api/community-reports/$reportId/resolve',
+    );
+  }
+
+  Future<dynamic> getRecentReports(
+    String zoneId,
+  ) async {
+    return await api.get(
+      '/api/community-reports/recent/$zoneId',
     );
   }
 }

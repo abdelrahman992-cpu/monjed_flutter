@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
 
+import 'otp_verification_screen.dart';
+
 import '../../services/api_service.dart';
 import '../../models/zone.dart';
+
 import '../../controllers/zone_controller.dart';
+import '../../controllers/auth_controller.dart';
 
 class SignUpScreenVolunteer extends StatefulWidget {
   const SignUpScreenVolunteer({super.key});
@@ -26,9 +30,12 @@ class _SignUpScreenVolunteerState
 
   final _formKey = GlobalKey<FormState>();
 
-  final ApiService _api = ApiService();
+  final ZonesController zonesController =
+      ZonesController();
 
-final ZonesController zonesController = ZonesController();
+  final AuthController authController =
+      AuthController();
+
   // ==========================================================
   // COUNTRIES / ZONES
   // ==========================================================
@@ -92,6 +99,17 @@ final ZonesController zonesController = ZonesController();
   ];
 
   // ==========================================================
+  // INIT
+  // ==========================================================
+
+  @override
+  void initState() {
+    super.initState();
+
+    _loadCountries();
+  }
+
+  // ==========================================================
   // DISPOSE
   // ==========================================================
 
@@ -107,14 +125,176 @@ final ZonesController zonesController = ZonesController();
   }
 
   // ==========================================================
-  // INIT
+  // REGISTER VOLUNTEER ACCOUNT
   // ==========================================================
 
-  @override
-  void initState() {
-    super.initState();
+  Future<void> _registerVolunteer() async {
+    // ========================================================
+    // FORM VALIDATION
+    // ========================================================
 
-    _loadCountries();
+    if (!_formKey.currentState!.validate()) {
+      return;
+    }
+
+    // ========================================================
+    // COUNTRY VALIDATION
+    // ========================================================
+
+    if (selectedCountry == null ||
+        selectedCountry!.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Please select a country',
+          ),
+        ),
+      );
+
+      return;
+    }
+
+    // ========================================================
+    // ZONE VALIDATION
+    // ========================================================
+
+    if (selectedZone == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Please select a zone',
+          ),
+        ),
+      );
+
+      return;
+    }
+
+    // ========================================================
+    // START LOADING
+    // ========================================================
+
+    setState(() {
+      creatingAccount = true;
+    });
+
+    try {
+      // ======================================================
+      // REGISTER USER
+      // ======================================================
+
+      final result =
+          await authController.register(
+        displayName:
+            nameController.text.trim(),
+
+        email:
+            emailController.text.trim(),
+
+        password:
+            passwordController.text,
+
+        phone:
+            phoneController.text.trim(),
+
+        role:
+            'volunteer',
+
+        zoneId:
+            selectedZone!.zoneId,
+
+        country:
+            selectedCountry,
+
+        skills:
+            selectedSkills,
+
+        // No accessibility selection
+        // on this screen yet.
+        accessibilityNeeds:
+            const [],
+      );
+
+      // ======================================================
+      // DEBUG
+      // ======================================================
+
+      print(
+        '================================',
+      );
+
+      print(
+        'REGISTER SUCCESS',
+      );
+
+      print(
+        'USER ID: ${result.userId}',
+      );
+
+      print(
+        'EMAIL: ${result.email}',
+      );
+
+      print(
+        'OTP REQUIRED: ${result.requiresOtp}',
+      );
+
+      print(
+        '================================',
+      );
+
+      if (!mounted) {
+        return;
+      }
+
+      // ======================================================
+      // GO TO OTP SCREEN
+      // ======================================================
+
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) =>
+              OtpVerificationScreen(
+            userId:
+                result.userId,
+
+            email:
+                result.email,
+          ),
+        ),
+      );
+    } catch (e) {
+      // ======================================================
+      // REGISTER ERROR
+      // ======================================================
+
+      print(
+        'REGISTER ERROR: $e',
+      );
+
+      if (!mounted) {
+        return;
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Registration failed: $e',
+          ),
+        ),
+      );
+    } finally {
+      // ======================================================
+      // STOP LOADING
+      // ======================================================
+
+      if (mounted) {
+        setState(() {
+          creatingAccount = false;
+        });
+      }
+    }
   }
 
   // ==========================================================
@@ -127,25 +307,33 @@ final ZonesController zonesController = ZonesController();
           await zonesController.loadCountries();
 
       print(
-        'LOADED COUNTRIES: ${loadedCountries.length}',
+        'LOADED COUNTRIES: '
+        '${loadedCountries.length}',
       );
 
-      if (!mounted) return;
+      if (!mounted) {
+        return;
+      }
 
       setState(() {
-        countries = loadedCountries;
+        countries =
+            loadedCountries;
 
-        loadingCountries = false;
+        loadingCountries =
+            false;
       });
     } catch (e) {
       print(
         'LOAD COUNTRIES ERROR: $e',
       );
 
-      if (!mounted) return;
+      if (!mounted) {
+        return;
+      }
 
       setState(() {
-        loadingCountries = false;
+        loadingCountries =
+            false;
       });
 
       ScaffoldMessenger.of(context).showSnackBar(
@@ -186,25 +374,32 @@ final ZonesController zonesController = ZonesController();
 
       for (final zone in loadedZones) {
         print(
-          'ZONE: ${zone.zoneId} | '
+          'ZONE: '
+          '${zone.zoneId} | '
           '${zone.name} | '
           '${zone.country}',
         );
       }
 
-      if (!mounted) return;
+      if (!mounted) {
+        return;
+      }
 
       setState(() {
-        zones = loadedZones;
+        zones =
+            loadedZones;
 
-        loadingZones = false;
+        loadingZones =
+            false;
       });
     } catch (e) {
       print(
         'LOAD ZONES ERROR [$countryCode]: $e',
       );
 
-      if (!mounted) return;
+      if (!mounted) {
+        return;
+      }
 
       setState(() {
         loadingZones = false;
@@ -219,128 +414,6 @@ final ZonesController zonesController = ZonesController();
           ),
         ),
       );
-    }
-  }
-
-  // ==========================================================
-  // SIGN UP
-  // ==========================================================
-
-  Future<void> handleSignUp() async {
-    if (!_formKey.currentState!.validate()) {
-      return;
-    }
-
-    if (selectedZone == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Please select a zone.',
-          ),
-        ),
-      );
-
-      return;
-    }
-
-    final zone = selectedZone!;
-
-    // --------------------------------------------------------
-    // CHECK COORDINATES
-    // --------------------------------------------------------
-
-    if (zone.coordinates.length < 2) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Selected zone has invalid coordinates',
-          ),
-        ),
-      );
-
-      return;
-    }
-
-    setState(() {
-      creatingAccount = true;
-    });
-
-    try {
-      final capacity =
-          int.tryParse(
-                capacityController.text.trim(),
-              ) ??
-              1;
-
-      // ------------------------------------------------------
-      // CREATE VOLUNTEER
-      // ------------------------------------------------------
-
-      await _api.post(
-        '/assistance/volunteers/',
-        body: {
-          'name':
-              nameController.text.trim(),
-
-          'zone_id':
-              zone.zoneId,
-
-          // Natural Earth:
-          // coordinates = [longitude, latitude]
-
-          'latitude':
-              zone.coordinates[1],
-
-          'longitude':
-              zone.coordinates[0],
-
-          'available':
-              true,
-
-          'responder_level':
-              'volunteer',
-
-          'vehicle_type':
-              selectedVehicle,
-
-          'capacity':
-              capacity,
-
-          'skills':
-              selectedSkills,
-        },
-      );
-
-      if (!mounted) return;
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Volunteer account created successfully.',
-          ),
-        ),
-      );
-
-      Navigator.pushReplacementNamed(
-        context,
-        '/volunteer-login',
-      );
-    } catch (e) {
-      if (!mounted) return;
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Failed to create volunteer account: $e',
-          ),
-        ),
-      );
-    } finally {
-      if (mounted) {
-        setState(() {
-          creatingAccount = false;
-        });
-      }
     }
   }
 
@@ -415,6 +488,7 @@ final ZonesController zonesController = ZonesController();
                                   const Color(
                                 0xFFD9E5F5,
                               ),
+
                               width: 2,
                             ),
                           ),
@@ -424,7 +498,9 @@ final ZonesController zonesController = ZonesController();
                             child: Icon(
                               Icons
                                   .radio_button_checked,
+
                               size: 14,
+
                               color:
                                   Color(
                                 0xFF2455D6,
@@ -446,9 +522,12 @@ final ZonesController zonesController = ZonesController();
                                 Color(
                               0xFF273348,
                             ),
+
                             fontSize: 18,
+
                             fontWeight:
                                 FontWeight.w800,
+
                             letterSpacing:
                                 -0.5,
                           ),
@@ -471,7 +550,9 @@ final ZonesController zonesController = ZonesController();
 
                           Icon(
                             Icons.arrow_back,
+
                             size: 16,
+
                             color:
                                 Color(
                               0xFF718096,
@@ -491,7 +572,9 @@ final ZonesController zonesController = ZonesController();
                                   Color(
                                 0xFF718096,
                               ),
+
                               fontSize: 13,
+
                               fontWeight:
                                   FontWeight.w600,
                             ),
@@ -549,9 +632,12 @@ final ZonesController zonesController = ZonesController();
                                     Color(
                                   0xFF5F83D7,
                                 ),
+
                                 fontSize: 10,
+
                                 fontWeight:
                                     FontWeight.bold,
+
                                 letterSpacing:
                                     2.0,
                               ),
@@ -570,7 +656,9 @@ final ZonesController zonesController = ZonesController();
                                     Color(
                                   0xFF101827,
                                 ),
+
                                 fontSize: 27,
+
                                 fontWeight:
                                     FontWeight.w800,
                               ),
@@ -589,7 +677,9 @@ final ZonesController zonesController = ZonesController();
                                     Color(
                                   0xFF718096,
                                 ),
+
                                 fontSize: 13,
+
                                 height: 1.5,
                               ),
                             ),
@@ -662,6 +752,7 @@ final ZonesController zonesController = ZonesController();
                                   inputDecoration(
                                 hint:
                                     'you@example.com',
+
                                 icon:
                                     Icons
                                         .email_outlined,
@@ -678,9 +769,7 @@ final ZonesController zonesController = ZonesController();
                                 }
 
                                 if (!value
-                                    .contains(
-                                  '@',
-                                )) {
+                                    .contains('@')) {
                                   return 'Enter a valid email';
                                 }
 
@@ -709,13 +798,13 @@ final ZonesController zonesController = ZonesController();
                                   phoneController,
 
                               keyboardType:
-                                  TextInputType
-                                      .phone,
+                                  TextInputType.phone,
 
                               decoration:
                                   inputDecoration(
                                 hint:
                                     '+2547XXXXXXXX',
+
                                 icon: null,
                               ),
 
@@ -749,8 +838,7 @@ final ZonesController zonesController = ZonesController();
                               height: 7,
                             ),
 
-                            DropdownButtonFormField<
-                                String>(
+                            DropdownButtonFormField<String>(
                               value:
                                   selectedCountryCode,
 
@@ -760,6 +848,7 @@ final ZonesController zonesController = ZonesController();
                                     loadingCountries
                                         ? 'Loading countries...'
                                         : 'Select country',
+
                                 icon:
                                     Icons.public,
                               ),
@@ -768,8 +857,7 @@ final ZonesController zonesController = ZonesController();
                                   true,
 
                               items:
-                                  countries
-                                      .map(
+                                  countries.map(
                                 (
                                   country,
                                 ) {
@@ -834,8 +922,7 @@ final ZonesController zonesController = ZonesController();
                                               selectedZone =
                                                   null;
 
-                                              zones =
-                                                  [];
+                                              zones = [];
                                             },
                                           );
 
@@ -848,8 +935,7 @@ final ZonesController zonesController = ZonesController();
                                   (value) {
                                 if (value ==
                                         null ||
-                                    value
-                                        .isEmpty) {
+                                    value.isEmpty) {
                                   return 'Please select your country';
                                 }
 
@@ -873,8 +959,7 @@ final ZonesController zonesController = ZonesController();
                               height: 7,
                             ),
 
-                            DropdownButtonFormField<
-                                Zone>(
+                            DropdownButtonFormField<Zone>(
                               value:
                                   selectedZone,
 
@@ -886,18 +971,20 @@ final ZonesController zonesController = ZonesController();
                                         : selectedCountryCode ==
                                                 null
                                             ? 'Select country first'
-                                            : zones
-                                                    .isEmpty
+                                            : zones.isEmpty
                                                 ? 'No zones available'
                                                 : 'Select zone / area',
-                                icon: Icons
-                                    .location_on_outlined,
+
+                                icon:
+                                    Icons
+                                        .location_on_outlined,
                               ),
 
                               isExpanded:
                                   true,
 
-                              items: zones.map(
+                              items:
+                                  zones.map(
                                 (
                                   zone,
                                 ) {
@@ -916,11 +1003,11 @@ final ZonesController zonesController = ZonesController();
 
                               onChanged:
                                   (
-                                        !loadingZones &&
-                                        selectedCountryCode !=
-                                            null &&
-                                        zones.isNotEmpty
-                                      )
+                                    !loadingZones &&
+                                    selectedCountryCode !=
+                                        null &&
+                                    zones.isNotEmpty
+                                  )
                                       ? (
                                           zone,
                                         ) {
@@ -949,7 +1036,6 @@ final ZonesController zonesController = ZonesController();
                             // ==================================
 
                             if (_showVehicleSection) ...[
-
                               const SizedBox(
                                 height: 16,
                               ),
@@ -962,8 +1048,7 @@ final ZonesController zonesController = ZonesController();
                                 height: 7,
                               ),
 
-                              DropdownButtonFormField<
-                                  String>(
+                              DropdownButtonFormField<String>(
                                 value:
                                     selectedVehicle,
 
@@ -973,11 +1058,10 @@ final ZonesController zonesController = ZonesController();
                                   icon: null,
                                 ),
 
-                                items:
-                                    const [
-
+                                items: const [
                                   DropdownMenuItem(
                                     value: 'Car',
+
                                     child:
                                         Text(
                                       'Car',
@@ -987,6 +1071,7 @@ final ZonesController zonesController = ZonesController();
                                   DropdownMenuItem(
                                     value:
                                         'Motorcycle',
+
                                     child:
                                         Text(
                                       'Motorcycle',
@@ -995,6 +1080,7 @@ final ZonesController zonesController = ZonesController();
 
                                   DropdownMenuItem(
                                     value: 'Boat',
+
                                     child:
                                         Text(
                                       'Boat',
@@ -1003,6 +1089,7 @@ final ZonesController zonesController = ZonesController();
 
                                   DropdownMenuItem(
                                     value: 'None',
+
                                     child:
                                         Text(
                                       'None',
@@ -1012,11 +1099,13 @@ final ZonesController zonesController = ZonesController();
 
                                 onChanged:
                                     (value) {
-                                  setState(() {
-                                    selectedVehicle =
-                                        value ??
-                                            'Car';
-                                  });
+                                  setState(
+                                    () {
+                                      selectedVehicle =
+                                          value ??
+                                              'Car';
+                                    },
+                                  );
                                 },
                               ),
 
@@ -1041,8 +1130,7 @@ final ZonesController zonesController = ZonesController();
                                     capacityController,
 
                                 keyboardType:
-                                    TextInputType
-                                        .number,
+                                    TextInputType.number,
 
                                 decoration:
                                     inputDecoration(
@@ -1064,8 +1152,7 @@ final ZonesController zonesController = ZonesController();
                                 runSpacing: 6,
 
                                 children:
-                                    availableSkills
-                                        .map(
+                                    availableSkills.map(
                                   (
                                     skill,
                                   ) {
@@ -1108,14 +1195,12 @@ final ZonesController zonesController = ZonesController();
                                       ),
 
                                       backgroundColor:
-                                          Colors
-                                              .white,
+                                          Colors.white,
 
                                       shape:
                                           RoundedRectangleBorder(
                                         borderRadius:
-                                            BorderRadius
-                                                .circular(
+                                            BorderRadius.circular(
                                           6,
                                         ),
 
@@ -1200,14 +1285,16 @@ final ZonesController zonesController = ZonesController();
                                       Color(
                                     0xFFB1BDCC,
                                   ),
+
                                   fontSize: 13,
                                 ),
 
                                 prefixIcon:
                                     const Icon(
-                                  Icons
-                                      .lock_outline,
+                                  Icons.lock_outline,
+
                                   size: 17,
+
                                   color:
                                       Color(
                                     0xFF8291A5,
@@ -1216,7 +1303,8 @@ final ZonesController zonesController = ZonesController();
 
                                 suffixIcon:
                                     IconButton(
-                                  icon: Icon(
+                                  icon:
+                                      Icon(
                                     obscurePassword
                                         ? Icons
                                             .visibility_outlined
@@ -1246,8 +1334,7 @@ final ZonesController zonesController = ZonesController();
                                     true,
 
                                 fillColor:
-                                    Colors
-                                        .white,
+                                    Colors.white,
 
                                 contentPadding:
                                     const EdgeInsets
@@ -1258,8 +1345,7 @@ final ZonesController zonesController = ZonesController();
                                 enabledBorder:
                                     OutlineInputBorder(
                                   borderRadius:
-                                      BorderRadius
-                                          .circular(
+                                      BorderRadius.circular(
                                     6,
                                   ),
 
@@ -1275,8 +1361,7 @@ final ZonesController zonesController = ZonesController();
                                 focusedBorder:
                                     OutlineInputBorder(
                                   borderRadius:
-                                      BorderRadius
-                                          .circular(
+                                      BorderRadius.circular(
                                     6,
                                   ),
 
@@ -1294,8 +1379,7 @@ final ZonesController zonesController = ZonesController();
                                   (value) {
                                 if (value ==
                                         null ||
-                                    value
-                                        .isEmpty) {
+                                    value.isEmpty) {
                                   return 'Please enter a password';
                                 }
 
@@ -1327,7 +1411,7 @@ final ZonesController zonesController = ZonesController();
                                 onPressed:
                                     creatingAccount
                                         ? null
-                                        : handleSignUp,
+                                        : _registerVolunteer,
 
                                 style:
                                     ElevatedButton
@@ -1338,8 +1422,7 @@ final ZonesController zonesController = ZonesController();
                                   ),
 
                                   foregroundColor:
-                                      Colors
-                                          .white,
+                                      Colors.white,
 
                                   elevation: 0,
 
@@ -1358,12 +1441,15 @@ final ZonesController zonesController = ZonesController();
                                         ? const SizedBox(
                                             width:
                                                 18,
+
                                             height:
                                                 18,
+
                                             child:
                                                 CircularProgressIndicator(
                                               strokeWidth:
                                                   2,
+
                                               color:
                                                   Colors.white,
                                             ),
@@ -1375,8 +1461,10 @@ final ZonesController zonesController = ZonesController();
                                                 TextStyle(
                                               fontSize:
                                                   13,
+
                                               fontWeight:
-                                                  FontWeight.w700,
+                                                  FontWeight
+                                                      .w700,
                                             ),
                                           ),
                               ),
@@ -1407,7 +1495,9 @@ final ZonesController zonesController = ZonesController();
                                           Color(
                                         0xFF718096,
                                       ),
-                                      fontSize: 13,
+
+                                      fontSize:
+                                          13,
                                     ),
                                   ),
 
@@ -1430,8 +1520,10 @@ final ZonesController zonesController = ZonesController();
                                             Color(
                                           0xFF2455D6,
                                         ),
+
                                         fontSize:
                                             13,
+
                                         fontWeight:
                                             FontWeight
                                                 .w600,
@@ -1476,8 +1568,7 @@ final ZonesController zonesController = ZonesController();
 
               child: const Row(
                 mainAxisAlignment:
-                    MainAxisAlignment
-                        .spaceBetween,
+                    MainAxisAlignment.spaceBetween,
 
                 children: [
 
@@ -1491,16 +1582,18 @@ final ZonesController zonesController = ZonesController();
                             Color(
                           0xFF8B9AAF,
                         ),
+
                         fontSize: 7.5,
+
                         fontWeight:
                             FontWeight.w600,
+
                         letterSpacing:
                             0.5,
                       ),
 
                       overflow:
-                          TextOverflow
-                              .ellipsis,
+                          TextOverflow.ellipsis,
                     ),
                   ),
 
@@ -1517,9 +1610,12 @@ final ZonesController zonesController = ZonesController();
                           Color(
                         0xFF8B9AAF,
                       ),
+
                       fontSize: 7.5,
+
                       fontWeight:
                           FontWeight.w600,
+
                       letterSpacing:
                           0.5,
                     ),
@@ -1547,9 +1643,12 @@ final ZonesController zonesController = ZonesController();
           const TextStyle(
         color:
             Color(0xFF718096),
+
         fontSize: 10,
+
         fontWeight:
             FontWeight.w600,
+
         letterSpacing: 1.4,
       ),
     );
@@ -1564,12 +1663,14 @@ final ZonesController zonesController = ZonesController();
     required IconData? icon,
   }) {
     return InputDecoration(
-      hintText: hint,
+      hintText:
+          hint,
 
       hintStyle:
           const TextStyle(
         color:
             Color(0xFFB1BDCC),
+
         fontSize: 13,
       ),
 
@@ -1577,7 +1678,9 @@ final ZonesController zonesController = ZonesController();
           icon != null
               ? Icon(
                   icon,
+
                   size: 17,
+
                   color:
                       const Color(
                     0xFF8291A5,
@@ -1585,14 +1688,14 @@ final ZonesController zonesController = ZonesController();
                 )
               : null,
 
-      filled: true,
+      filled:
+          true,
 
       fillColor:
           Colors.white,
 
       contentPadding:
-          const EdgeInsets
-              .symmetric(
+          const EdgeInsets.symmetric(
         vertical: 14,
         horizontal: 12,
       ),
@@ -1627,5 +1730,3 @@ final ZonesController zonesController = ZonesController();
     );
   }
 }
-
-
