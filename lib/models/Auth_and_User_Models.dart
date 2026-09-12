@@ -1,10 +1,4 @@
-```text
-lib/models/auth/
 
-auth_models.dart
-```
-
-```dart
 // ============================================================
 // ENUMS
 // ============================================================
@@ -40,6 +34,10 @@ class RegisterRequest {
   final List<String> skills;
   final bool notificationConsent;
 
+  // Volunteer fields
+  final String? vehicleType;
+  final int? capacity;
+
   RegisterRequest({
     required this.displayName,
     required this.email,
@@ -52,6 +50,8 @@ class RegisterRequest {
     this.accessibilityNeeds = const [],
     this.skills = const [],
     this.notificationConsent = true,
+    this.vehicleType,
+    this.capacity,
   });
 
   Map<String, dynamic> toJson() {
@@ -67,6 +67,8 @@ class RegisterRequest {
       'accessibility_needs': accessibilityNeeds,
       'skills': skills,
       'notification_consent': notificationConsent,
+      'vehicle_type': vehicleType,
+      'capacity': capacity,
     };
   }
 }
@@ -95,7 +97,7 @@ class LoginRequest {
 }
 
 // ============================================================
-// VERIFY OTP
+// VERIFY OTP REQUEST
 // POST /auth/verify-otp
 // ============================================================
 
@@ -117,7 +119,9 @@ class VerifyOTPRequest {
 }
 
 // ============================================================
-// OTP RESPONSE
+// OTP REQUIRED RESPONSE
+// POST /auth/register
+// POST /auth/login
 // ============================================================
 
 class OTPRequiredResponse {
@@ -134,12 +138,14 @@ class OTPRequiredResponse {
         'A 6-digit verification code has been sent to your email.',
   });
 
-  factory OTPRequiredResponse.fromJson(Map<String, dynamic> json) {
+  factory OTPRequiredResponse.fromJson(
+    Map<String, dynamic> json,
+  ) {
     return OTPRequiredResponse(
-      requiresOtp: json['requires_otp'] ?? true,
-      userId: json['user_id'] ?? '',
-      email: json['email'] ?? '',
-      message: json['message'] ??
+      requiresOtp: json['requires_otp'] == true,
+      userId: json['user_id']?.toString() ?? '',
+      email: json['email']?.toString() ?? '',
+      message: json['message']?.toString() ??
           'A 6-digit verification code has been sent to your email.',
     );
   }
@@ -147,6 +153,7 @@ class OTPRequiredResponse {
 
 // ============================================================
 // AUTH USER RESPONSE
+// Returned after successful authentication
 // ============================================================
 
 class AuthUserResponse {
@@ -170,23 +177,27 @@ class AuthUserResponse {
     this.preferredLanguage = 'en',
   });
 
-  factory AuthUserResponse.fromJson(Map<String, dynamic> json) {
+  factory AuthUserResponse.fromJson(
+    Map<String, dynamic> json,
+  ) {
     return AuthUserResponse(
-      userId: json['user_id'] ?? '',
-      displayName: json['display_name'],
-      role: json['role'] ?? '',
-      email: json['email'],
-      phone: json['phone'],
-      zoneId: json['zone_id'],
-      country: json['country'],
+      userId: json['user_id']?.toString() ?? '',
+      displayName: json['display_name']?.toString(),
+      role: json['role']?.toString() ?? '',
+      email: json['email']?.toString(),
+      phone: json['phone']?.toString(),
+      zoneId: json['zone_id']?.toString(),
+      country: json['country']?.toString(),
       preferredLanguage:
-          json['preferred_language'] ?? 'en',
+          json['preferred_language']?.toString() ?? 'en',
     );
   }
 }
 
 // ============================================================
 // AUTH RESPONSE
+// POST /auth/verify-otp
+// POST /auth/login
 // ============================================================
 
 class AuthResponse {
@@ -200,12 +211,18 @@ class AuthResponse {
     required this.user,
   });
 
-  factory AuthResponse.fromJson(Map<String, dynamic> json) {
+  factory AuthResponse.fromJson(
+    Map<String, dynamic> json,
+  ) {
     return AuthResponse(
-      accessToken: json['access_token'] ?? '',
-      tokenType: json['token_type'] ?? 'bearer',
+      accessToken:
+          json['access_token']?.toString() ?? '',
+      tokenType:
+          json['token_type']?.toString() ?? 'bearer',
       user: AuthUserResponse.fromJson(
-        json['user'] ?? {},
+        Map<String, dynamic>.from(
+          json['user'] ?? {},
+        ),
       ),
     );
   }
@@ -257,11 +274,16 @@ class ContactResponse {
     required this.createdAt,
   });
 
-  factory ContactResponse.fromJson(Map<String, dynamic> json) {
+  factory ContactResponse.fromJson(
+    Map<String, dynamic> json,
+  ) {
     return ContactResponse(
-      contactId: json['contact_id'] ?? '',
-      status: json['status'] ?? 'received',
-      createdAt: DateTime.parse(json['created_at']),
+      contactId:
+          json['contact_id']?.toString() ?? '',
+      status:
+          json['status']?.toString() ?? 'received',
+      createdAt:
+          DateTime.parse(json['created_at']),
     );
   }
 }
@@ -296,21 +318,30 @@ class UserListItem {
     this.smsEligible = false,
   });
 
-  factory UserListItem.fromJson(Map<String, dynamic> json) {
+  factory UserListItem.fromJson(
+    Map<String, dynamic> json,
+  ) {
     return UserListItem(
-      userId: json['user_id'] ?? '',
-      displayName: json['display_name'],
-      role: json['role'],
-      email: json['email'],
-      phone: json['phone'],
-      zoneId: json['zone_id'],
-      country: json['country'],
+      userId:
+          json['user_id']?.toString() ?? '',
+      displayName:
+          json['display_name']?.toString(),
+      role:
+          json['role']?.toString(),
+      email:
+          json['email']?.toString(),
+      phone:
+          json['phone']?.toString(),
+      zoneId:
+          json['zone_id']?.toString(),
+      country:
+          json['country']?.toString(),
       preferredLanguage:
-          json['preferred_language'] ?? 'en',
+          json['preferred_language']?.toString() ?? 'en',
       notificationConsent:
-          json['notification_consent'] ?? false,
+          json['notification_consent'] == true,
       smsEligible:
-          json['sms_eligible'] ?? false,
+          json['sms_eligible'] == true,
     );
   }
 }
@@ -352,23 +383,32 @@ class UserProfileResponse {
     Map<String, dynamic> json,
   ) {
     return UserProfileResponse(
-      userId: json['user_id'] ?? '',
-      displayName: json['display_name'],
-      role: json['role'],
-      roleTitle: json['role_title'],
-      organization: json['organization'],
-      workEmail: json['work_email'],
-      phone: json['phone'],
-      zoneId: json['zone_id'],
-      country: json['country'],
+      userId:
+          json['user_id']?.toString() ?? '',
+      displayName:
+          json['display_name']?.toString(),
+      role:
+          json['role']?.toString(),
+      roleTitle:
+          json['role_title']?.toString(),
+      organization:
+          json['organization']?.toString(),
+      workEmail:
+          json['work_email']?.toString(),
+      phone:
+          json['phone']?.toString(),
+      zoneId:
+          json['zone_id']?.toString(),
+      country:
+          json['country']?.toString(),
       preferredLanguage:
-          json['preferred_language'] ?? 'en',
+          json['preferred_language']?.toString() ?? 'en',
       accessibilityNeeds:
           List<String>.from(
         json['accessibility_needs'] ?? [],
       ),
       notificationConsent:
-          json['notification_consent'] ?? false,
+          json['notification_consent'] == true,
     );
   }
 }
@@ -421,4 +461,5 @@ class UserProfileUpdate {
     };
   }
 }
-```
+
+

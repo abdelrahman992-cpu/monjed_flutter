@@ -109,9 +109,9 @@ static const String volunteerSignup = '/volunteer-signup';
       // VOLUNTEER - PROTECTED
       // ============================================================
 
-   case volunteer:
+case volunteer:
   return MaterialPageRoute(
-    builder: (_) => const LoginScreenVolunteer(),
+    builder: (_) => const VolunteerScreen(),
   );
 
 case volunteerLogin:

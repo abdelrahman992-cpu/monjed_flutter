@@ -1,4 +1,3 @@
-
 import '../models/Auth_and_User_Models.dart';
 import '../services/api_service.dart';
 
@@ -21,6 +20,10 @@ class AuthController {
     List<String> accessibilityNeeds = const [],
     List<String> skills = const [],
     bool notificationConsent = true,
+
+    // Volunteer fields
+    String? vehicleType,
+    int? capacity,
   }) async {
     final body = {
       'display_name': displayName,
@@ -34,6 +37,10 @@ class AuthController {
       'accessibility_needs': accessibilityNeeds,
       'skills': skills,
       'notification_consent': notificationConsent,
+
+      // Volunteer data
+      'vehicle_type': vehicleType,
+      'capacity': capacity,
     };
 
     // Remove nullable fields when they are null.
@@ -134,8 +141,8 @@ class AuthController {
     await api.saveUserData(
       userId: authResponse.user.userId,
       role: authResponse.user.role,
-      displayName: authResponse.user.displayName,
-      email: authResponse.user.email,
+      displayName: authResponse.user.displayName ?? '',
+      email: authResponse.user.email ?? '',
       phone: authResponse.user.phone,
       zoneId: authResponse.user.zoneId,
       country: authResponse.user.country,
@@ -193,5 +200,3 @@ class AuthController {
     );
   }
 }
-
-

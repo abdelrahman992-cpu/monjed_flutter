@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'otp_verification_screen.dart';
-
-import '../../services/api_service.dart';
+import '../../models/Auth_and_User_Models.dart';
 import '../../models/zone.dart';
 
 import '../../controllers/zone_controller.dart';
@@ -60,21 +59,21 @@ class _SignUpScreenVolunteerState
 
   bool creatingAccount = false;
 
-  final nameController =
+  final TextEditingController nameController =
       TextEditingController();
 
-  final emailController =
+  final TextEditingController emailController =
       TextEditingController();
 
-  final phoneController =
+  final TextEditingController phoneController =
       TextEditingController();
 
-  final capacityController =
+  final TextEditingController capacityController =
       TextEditingController(
     text: '3',
   );
 
-  final passwordController =
+  final TextEditingController passwordController =
       TextEditingController();
 
   bool obscurePassword = true;
@@ -85,18 +84,53 @@ class _SignUpScreenVolunteerState
 
   String selectedVehicle = 'Car';
 
+  // ==========================================================
+  // VOLUNTEER SKILLS
+  // ==========================================================
+
   final List<String> selectedSkills = [
-    'Driving',
+    'transportation',
   ];
 
   final List<String> availableSkills = [
-    'First aid',
-    'Driving',
-    'Boat / water rescue',
-    'Translation',
-    'Logistics',
-    'Shelter setup',
+    'evacuation',
+    'transportation',
+    'mobility_assistance',
+    'medical_support',
+    'rescue_support',
+    'general_support',
   ];
+
+  // ==========================================================
+  // SKILL LABEL
+  // القيمة دي للعرض فقط
+  // الـ API بياخد القيمة الأصلية
+  // ==========================================================
+
+  String skillLabel(String skill) {
+    switch (skill) {
+      case 'evacuation':
+        return 'Evacuation';
+
+      case 'transportation':
+        return 'Transportation';
+
+      case 'mobility_assistance':
+        return 'Mobility assistance';
+
+      case 'medical_support':
+        return 'Medical support';
+
+      case 'rescue_support':
+        return 'Rescue support';
+
+      case 'general_support':
+        return 'General support';
+
+      default:
+        return skill;
+    }
+  }
 
   // ==========================================================
   // INIT
@@ -171,6 +205,30 @@ class _SignUpScreenVolunteerState
     }
 
     // ========================================================
+    // VEHICLE VALIDATION
+    // ========================================================
+
+    int? parsedCapacity;
+
+    if (selectedVehicle != 'None') {
+      parsedCapacity = int.tryParse(
+        capacityController.text.trim(),
+      );
+
+      if (parsedCapacity == null || parsedCapacity <= 0) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Please enter a valid vehicle capacity',
+            ),
+          ),
+        );
+
+        return;
+      }
+    }
+
+    // ========================================================
     // START LOADING
     // ========================================================
 
@@ -209,10 +267,34 @@ class _SignUpScreenVolunteerState
         skills:
             selectedSkills,
 
-        // No accessibility selection
-        // on this screen yet.
         accessibilityNeeds:
             const [],
+
+        // ====================================================
+        // VEHICLE TYPE
+        //
+        // None => null
+        // Car/Motorcycle/Boat => selected value
+        // ====================================================
+
+        vehicleType:
+            selectedVehicle == 'None'
+                ? null
+                : selectedVehicle,
+
+        // ====================================================
+        // CAPACITY
+        //
+        // None => null
+        // Vehicle => integer value
+        // ====================================================
+
+        capacity:
+            selectedVehicle == 'None'
+                ? null
+                : int.tryParse(
+                    capacityController.text.trim(),
+                  ),
       );
 
       // ======================================================
@@ -240,6 +322,22 @@ class _SignUpScreenVolunteerState
       );
 
       print(
+        'VEHICLE TYPE: '
+        '${selectedVehicle == 'None' ? null : selectedVehicle}',
+      );
+
+      print(
+        'CAPACITY: '
+        '${selectedVehicle == 'None' ? null : int.tryParse(
+            capacityController.text.trim(),
+          )}',
+      );
+
+      print(
+        'SKILLS: $selectedSkills',
+      );
+
+      print(
         '================================',
       );
 
@@ -248,22 +346,32 @@ class _SignUpScreenVolunteerState
       }
 
       // ======================================================
-      // GO TO OTP SCREEN
+      // GO TO OTP
       // ======================================================
 
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) =>
-              OtpVerificationScreen(
-            userId:
-                result.userId,
+      if (result.requiresOtp) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) =>
+                OtpVerificationScreen(
+              userId:
+                  result.userId,
 
-            email:
-                result.email,
+              email:
+                  result.email,
+
+              successRoute:
+                  '/volunteer',
+            ),
           ),
-        ),
-      );
+        );
+      } else {
+        Navigator.pushReplacementNamed(
+          context,
+          '/volunteer',
+        );
+      }
     } catch (e) {
       // ======================================================
       // REGISTER ERROR
@@ -1031,14 +1139,18 @@ class _SignUpScreenVolunteerState
                               },
                             ),
 
-                            // ==================================
+                            // ==================================================
                             // VEHICLE SECTION
-                            // ==================================
+                            // ==================================================
 
                             if (_showVehicleSection) ...[
                               const SizedBox(
                                 height: 16,
                               ),
+
+                              // ==============================================
+                              // VEHICLE
+                              // ==============================================
 
                               _fieldLabel(
                                 'Vehicle',
@@ -1058,10 +1170,12 @@ class _SignUpScreenVolunteerState
                                   icon: null,
                                 ),
 
+                                isExpanded:
+                                    true,
+
                                 items: const [
                                   DropdownMenuItem(
                                     value: 'Car',
-
                                     child:
                                         Text(
                                       'Car',
@@ -1071,7 +1185,6 @@ class _SignUpScreenVolunteerState
                                   DropdownMenuItem(
                                     value:
                                         'Motorcycle',
-
                                     child:
                                         Text(
                                       'Motorcycle',
@@ -1080,7 +1193,6 @@ class _SignUpScreenVolunteerState
 
                                   DropdownMenuItem(
                                     value: 'Boat',
-
                                     child:
                                         Text(
                                       'Boat',
@@ -1089,7 +1201,6 @@ class _SignUpScreenVolunteerState
 
                                   DropdownMenuItem(
                                     value: 'None',
-
                                     child:
                                         Text(
                                       'None',
@@ -1099,156 +1210,252 @@ class _SignUpScreenVolunteerState
 
                                 onChanged:
                                     (value) {
+                                  if (value ==
+                                      null) {
+                                    return;
+                                  }
+
                                   setState(
                                     () {
                                       selectedVehicle =
-                                          value ??
-                                              'Car';
+                                          value;
+
+                                      // ----------------------------------
+                                      // NONE
+                                      // ----------------------------------
+                                      //
+                                      // لو مفيش Vehicle:
+                                      // - transportation تتشال
+                                      // - Capacity مش هتظهر
+                                      // - Skills مش هتظهر
+                                      //
+
+                                      if (selectedVehicle ==
+                                          'None') {
+                                        selectedSkills
+                                            .remove(
+                                          'transportation',
+                                        );
+                                      }
+
+                                      // ----------------------------------
+                                      // VEHICLE SELECTED
+                                      // ----------------------------------
+                                      //
+                                      // لو رجع اختار Vehicle:
+                                      // transportation ترجع افتراضيًا
+                                      //
+
+                                      else {
+                                        if (!selectedSkills
+                                            .contains(
+                                          'transportation',
+                                        )) {
+                                          selectedSkills
+                                              .add(
+                                            'transportation',
+                                          );
+                                        }
+                                      }
                                     },
                                   );
                                 },
+
+                                validator:
+                                    (value) {
+                                  if (value ==
+                                          null ||
+                                      value.isEmpty) {
+                                    return 'Please select your vehicle';
+                                  }
+
+                                  return null;
+                                },
                               ),
 
-                              const SizedBox(
-                                height: 16,
-                              ),
+                              // ==================================================
+                              // CAPACITY + SKILLS
+                              // ==================================================
 
-                              // ==================================
-                              // CAPACITY
-                              // ==================================
-
-                              _fieldLabel(
-                                'Capacity',
-                              ),
-
-                              const SizedBox(
-                                height: 7,
-                              ),
-
-                              TextFormField(
-                                controller:
-                                    capacityController,
-
-                                keyboardType:
-                                    TextInputType.number,
-
-                                decoration:
-                                    inputDecoration(
-                                  hint: '',
-                                  icon: null,
+                              if (selectedVehicle !=
+                                  'None') ...[
+                                const SizedBox(
+                                  height: 16,
                                 ),
-                              ),
 
-                              const SizedBox(
-                                height: 16,
-                              ),
+                                // ==============================================
+                                // CAPACITY
+                                // ==============================================
 
-                              // ==================================
-                              // SKILLS
-                              // ==================================
+                                _fieldLabel(
+                                  'Capacity',
+                                ),
 
-                              Wrap(
-                                spacing: 6,
-                                runSpacing: 6,
+                                const SizedBox(
+                                  height: 7,
+                                ),
 
-                                children:
-                                    availableSkills.map(
-                                  (
-                                    skill,
-                                  ) {
-                                    final isSelected =
-                                        selectedSkills
-                                            .contains(
-                                      skill,
+                                TextFormField(
+                                  controller:
+                                      capacityController,
+
+                                  keyboardType:
+                                      TextInputType.number,
+
+                                  decoration:
+                                      inputDecoration(
+                                    hint:
+                                        'Number of people',
+                                    icon:
+                                        null,
+                                  ),
+
+                                  validator:
+                                      (value) {
+                                    if (value ==
+                                            null ||
+                                        value
+                                            .trim()
+                                            .isEmpty) {
+                                      return 'Please enter capacity';
+                                    }
+
+                                    final capacity =
+                                        int.tryParse(
+                                      value
+                                          .trim(),
                                     );
 
-                                    return ChoiceChip(
-                                      label:
-                                          Text(
+                                    if (capacity ==
+                                            null ||
+                                        capacity <=
+                                            0) {
+                                      return 'Enter a valid capacity';
+                                    }
+
+                                    return null;
+                                  },
+                                ),
+
+                                const SizedBox(
+                                  height: 16,
+                                ),
+
+                                // ==============================================
+                                // SKILLS
+                                // ==============================================
+
+                                _fieldLabel(
+                                  'Skills',
+                                ),
+
+                                const SizedBox(
+                                  height: 7,
+                                ),
+
+                                Wrap(
+                                  spacing: 6,
+                                  runSpacing: 6,
+
+                                  children:
+                                      availableSkills
+                                          .map(
+                                    (
+                                      skill,
+                                    ) {
+                                      final isSelected =
+                                          selectedSkills
+                                              .contains(
                                         skill,
+                                      );
 
-                                        style:
-                                            TextStyle(
-                                          fontSize:
-                                              11,
+                                      return ChoiceChip(
+                                        label:
+                                            Text(
+                                          skillLabel(
+                                            skill,
+                                          ),
 
-                                          color:
-                                              isSelected
-                                                  ? const Color(
-                                                      0xFF2455D6,
-                                                    )
-                                                  : const Color(
-                                                      0xFF718096,
-                                                    ),
+                                          style:
+                                              TextStyle(
+                                            fontSize:
+                                                11,
 
-                                          fontWeight:
-                                              FontWeight.w500,
-                                        ),
-                                      ),
+                                            color: isSelected
+                                                ? const Color(
+                                                    0xFF2455D6,
+                                                  )
+                                                : const Color(
+                                                    0xFF718096,
+                                                  ),
 
-                                      selected:
-                                          isSelected,
-
-                                      selectedColor:
-                                          const Color(
-                                        0xFFE2EBF8,
-                                      ),
-
-                                      backgroundColor:
-                                          Colors.white,
-
-                                      shape:
-                                          RoundedRectangleBorder(
-                                        borderRadius:
-                                            BorderRadius.circular(
-                                          6,
+                                            fontWeight:
+                                                FontWeight.w500,
+                                          ),
                                         ),
 
-                                        side:
-                                            BorderSide(
-                                          color:
-                                              isSelected
-                                                  ? const Color(
-                                                      0xFF2455D6,
-                                                    )
-                                                  : const Color(
-                                                      0xFFD6DEE9,
-                                                    ),
+                                        selected:
+                                            isSelected,
+
+                                        selectedColor:
+                                            const Color(
+                                          0xFFE2EBF8,
                                         ),
-                                      ),
 
-                                      showCheckmark:
-                                          false,
+                                        backgroundColor:
+                                            Colors.white,
 
-                                      onSelected:
-                                          (
-                                            selected,
-                                          ) {
-                                            setState(
-                                              () {
-                                                if (selected) {
-                                                  if (!selectedSkills
-                                                      .contains(
-                                                    skill,
-                                                  )) {
-                                                    selectedSkills
-                                                        .add(
-                                                      skill,
-                                                    );
-                                                  }
-                                                } else {
+                                        shape:
+                                            RoundedRectangleBorder(
+                                          borderRadius:
+                                              BorderRadius
+                                                  .circular(
+                                            6,
+                                          ),
+
+                                          side:
+                                              BorderSide(
+                                            color: isSelected
+                                                ? const Color(
+                                                    0xFF2455D6,
+                                                  )
+                                                : const Color(
+                                                    0xFFD6DEE9,
+                                                  ),
+                                          ),
+                                        ),
+
+                                        showCheckmark:
+                                            false,
+
+                                        onSelected:
+                                            (selected) {
+                                          setState(
+                                            () {
+                                              if (selected) {
+                                                if (!selectedSkills
+                                                    .contains(
+                                                  skill,
+                                                )) {
                                                   selectedSkills
-                                                      .remove(
+                                                      .add(
                                                     skill,
                                                   );
                                                 }
-                                              },
-                                            );
-                                          },
-                                    );
-                                  },
-                                ).toList(),
-                              ),
+                                              } else {
+                                                selectedSkills
+                                                    .remove(
+                                                  skill,
+                                                );
+                                              }
+                                            },
+                                          );
+                                        },
+                                      );
+                                    },
+                                  ).toList(),
+                                ),
+                              ],
                             ],
 
                             const SizedBox(

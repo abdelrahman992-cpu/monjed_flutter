@@ -3,7 +3,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
-import '../../services/api_service.dart';
+import '../../controllers/auth_controller.dart';
 
 class OtpVerificationScreen extends StatefulWidget {
   final String userId;
@@ -17,7 +17,7 @@ class OtpVerificationScreen extends StatefulWidget {
     super.key,
     required this.userId,
     required this.email,
-    this.successRoute = '/volunteer',
+    this.successRoute = '/home',
   });
 
   @override
@@ -26,7 +26,7 @@ class OtpVerificationScreen extends StatefulWidget {
 }
 
 class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
-  final ApiService _api = ApiService();
+final AuthController _authController = AuthController();
 
   final TextEditingController _otpController =
       TextEditingController();
@@ -100,97 +100,66 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
   // ============================================================
 
   Future<void> _verifyOtp() async {
-    final code = _otpController.text.trim();
+  final code = _otpController.text.trim();
 
-    if (code.length != 6) {
-      _showMessage(
-        'Please enter the 6-digit verification code.',
-        isError: true,
-      );
-      return;
-    }
+  if (code.length != 6) {
+    _showMessage(
+      'Please enter the 6-digit verification code.',
+      isError: true,
+    );
+    return;
+  }
 
-    if (_verifying) return;
+  if (_verifying) return;
 
-    setState(() {
-      _verifying = true;
-    });
+  setState(() {
+    _verifying = true;
+  });
 
-    try {
-      final response = await _api.post(
-        '/auth/verify-otp',
-        body: {
-          'user_id': widget.userId,
-          'code': code,
-        },
-      );
+  try {
+    // Verify OTP + save access token + save user data
+    await _authController.verifyOtp(
+      userId: widget.userId,
+      code: code,
+    );
 
-      if (!mounted) return;
+    if (!mounted) return;
 
-      /*
-       * Expected FastAPI response:
-       *
-       * {
-       *   "access_token": "...",
-       *   "token_type": "bearer",
-       *   "user": {
-       *      "user_id": "...",
-       *      "display_name": "...",
-       *      "role": "volunteer",
-       *      ...
-       *   }
-       * }
-       */
+    _timer?.cancel();
 
-      final accessToken =
-          response['access_token']?.toString();
+    _showMessage(
+      'Email verified successfully.',
+      isError: false,
+    );
 
-      if (accessToken == null || accessToken.isEmpty) {
-        throw Exception(
-          'No access token returned from server.',
-        );
-      }
+    await Future.delayed(
+      const Duration(milliseconds: 700),
+    );
 
-      // ----------------------------------------------------------
-      // TODO:
-      // Save accessToken locally using SharedPreferences
-      // or your AuthController/AuthService.
-      //
-      // For now we keep it available in this screen and continue.
-      // ----------------------------------------------------------
+    if (!mounted) return;
 
-      _timer?.cancel();
+    // Go to the page passed by Login/Register
+    Navigator.pushNamedAndRemoveUntil(
+      context,
+      widget.successRoute,
+      (route) => false,
+    );
+  } catch (e) {
+    if (!mounted) return;
 
-      _showMessage(
-        'Email verified successfully.',
-        isError: false,
-      );
-
-      await Future.delayed(
-        const Duration(milliseconds: 700),
-      );
-
-      if (!mounted) return;
-
-      Navigator.pushReplacementNamed(
-        context,
-        widget.successRoute,
-      );
-    } catch (e) {
-      if (!mounted) return;
-
-      _showMessage(
-        _cleanErrorMessage(e),
-        isError: true,
-      );
-    } finally {
-      if (mounted) {
-        setState(() {
-          _verifying = false;
-        });
-      }
+    _showMessage(
+      _cleanErrorMessage(e),
+      isError: true,
+    );
+  } finally {
+    if (mounted) {
+      setState(() {
+        _verifying = false;
+      });
     }
   }
+}
+
 
   // ============================================================
   // HELPERS

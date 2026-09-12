@@ -1,5 +1,9 @@
+
 import 'package:flutter/material.dart';
+import '../../models/Auth_and_User_Models.dart';
+import '../../controllers/auth_controller.dart';
 import '../../routes/app_routes.dart';
+import 'otp_verification_screen.dart';
 
 class LoginScreenVolunteer extends StatefulWidget {
   const LoginScreenVolunteer({super.key});
@@ -15,7 +19,10 @@ class _LoginScreenVolunteerState extends State<LoginScreenVolunteer> {
   final TextEditingController _passwordController =
       TextEditingController();
 
+  final AuthController _authController = AuthController();
+
   bool _obscurePassword = true;
+  bool _isLoading = false;
 
   @override
   void dispose() {
@@ -24,11 +31,11 @@ class _LoginScreenVolunteerState extends State<LoginScreenVolunteer> {
     super.dispose();
   }
 
-  void _login() {
-    final email = _emailController.text.trim();
+  Future<void> _login() async {
+    final identifier = _emailController.text.trim();
     final password = _passwordController.text;
 
-    if (email.isEmpty || password.isEmpty) {
+    if (identifier.isEmpty || password.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text(
@@ -39,9 +46,87 @@ class _LoginScreenVolunteerState extends State<LoginScreenVolunteer> {
       return;
     }
 
-    // TODO:
-    // Connect this later to:
-    // POST /auth/login
+    if (_isLoading) return;
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final result = await _authController.login(
+        identifier: identifier,
+        password: password,
+      );
+
+      if (!mounted) return;
+
+      // ==========================================================
+      // OTP REQUIRED
+      // ==========================================================
+
+      if (result is OTPRequiredResponse) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => OtpVerificationScreen(
+              userId: result.userId,
+              email: result.email,
+              successRoute: AppRoutes.volunteer,
+            ),
+          ),
+        );
+
+        return;
+      }
+
+      // ==========================================================
+      // DIRECT LOGIN
+      // ==========================================================
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Login successful.',
+          ),
+        ),
+      );
+
+      Navigator.pushReplacementNamed(
+        context,
+        AppRoutes.volunteer,
+      );
+    } catch (e) {
+      if (!mounted) return;
+
+      String message = 'Login failed. Please try again.';
+
+      final errorText = e.toString();
+
+      if (errorText.contains('401')) {
+        message = 'Invalid email/phone or password.';
+      } else if (errorText.contains('403')) {
+        message =
+            'This account does not have volunteer access.';
+      } else if (errorText.contains('500')) {
+        message =
+            'Server error. Please try again later.';
+      } else if (errorText.contains('SocketException')) {
+        message =
+            'Cannot connect to MONJED server.';
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(message),
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
   }
 
   @override
@@ -93,9 +178,7 @@ class _LoginScreenVolunteerState extends State<LoginScreenVolunteer> {
                           ),
                         ),
                       ),
-
                       const SizedBox(width: 9),
-
                       const Text(
                         'MONJED',
                         style: TextStyle(
@@ -122,17 +205,14 @@ class _LoginScreenVolunteerState extends State<LoginScreenVolunteer> {
                     constraints: const BoxConstraints(
                       maxWidth: 350,
                     ),
-
                     child: Padding(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 20,
                         vertical: 18,
                       ),
-
                       child: Column(
                         crossAxisAlignment:
                             CrossAxisAlignment.start,
-
                         children: [
                           // ==================================================
                           // BACK
@@ -149,13 +229,11 @@ class _LoginScreenVolunteerState extends State<LoginScreenVolunteer> {
                                 );
                               }
                             },
-
                             icon: const Icon(
                               Icons.arrow_back,
                               size: 17,
                               color: Color(0xFF71829A),
                             ),
-
                             label: const Text(
                               'Back',
                               style: TextStyle(
@@ -163,7 +241,6 @@ class _LoginScreenVolunteerState extends State<LoginScreenVolunteer> {
                                 fontSize: 13,
                               ),
                             ),
-
                             style: TextButton.styleFrom(
                               padding: EdgeInsets.zero,
                             ),
@@ -233,57 +310,47 @@ class _LoginScreenVolunteerState extends State<LoginScreenVolunteer> {
                             controller: _emailController,
                             keyboardType:
                                 TextInputType.emailAddress,
-
+                            enabled: !_isLoading,
                             decoration: InputDecoration(
                               hintText:
                                   'you@example.com or +2547...',
-
                               hintStyle: const TextStyle(
                                 color: Color(0xFFB1BDCC),
                                 fontSize: 13,
                               ),
-
                               prefixIcon: const Icon(
                                 Icons.email_outlined,
                                 size: 17,
                                 color: Color(0xFF8291A5),
                               ),
-
                               filled: true,
                               fillColor: Colors.white,
-
                               contentPadding:
                                   const EdgeInsets.symmetric(
                                 vertical: 14,
                                 horizontal: 12,
                               ),
-
                               border: OutlineInputBorder(
                                 borderRadius:
                                     BorderRadius.circular(6),
-
                                 borderSide:
                                     const BorderSide(
                                   color: Color(0xFFD6DEE9),
                                 ),
                               ),
-
                               enabledBorder:
                                   OutlineInputBorder(
                                 borderRadius:
                                     BorderRadius.circular(6),
-
                                 borderSide:
                                     const BorderSide(
                                   color: Color(0xFFD6DEE9),
                                 ),
                               ),
-
                               focusedBorder:
                                   OutlineInputBorder(
                                 borderRadius:
                                     BorderRadius.circular(6),
-
                                 borderSide:
                                     const BorderSide(
                                   color: Color(0xFF2455D6),
@@ -313,14 +380,13 @@ class _LoginScreenVolunteerState extends State<LoginScreenVolunteer> {
                           TextField(
                             controller: _passwordController,
                             obscureText: _obscurePassword,
-
+                            enabled: !_isLoading,
                             decoration: InputDecoration(
                               prefixIcon: const Icon(
                                 Icons.lock_outline,
                                 size: 17,
                                 color: Color(0xFF8291A5),
                               ),
-
                               suffixIcon: IconButton(
                                 icon: Icon(
                                   _obscurePassword
@@ -331,49 +397,42 @@ class _LoginScreenVolunteerState extends State<LoginScreenVolunteer> {
                                     0xFF8291A5,
                                   ),
                                 ),
-
-                                onPressed: () {
-                                  setState(() {
-                                    _obscurePassword =
-                                        !_obscurePassword;
-                                  });
-                                },
+                                onPressed: _isLoading
+                                    ? null
+                                    : () {
+                                        setState(() {
+                                          _obscurePassword =
+                                              !_obscurePassword;
+                                        });
+                                      },
                               ),
-
                               filled: true,
                               fillColor: Colors.white,
-
                               contentPadding:
                                   const EdgeInsets.symmetric(
                                 vertical: 14,
                               ),
-
                               border: OutlineInputBorder(
                                 borderRadius:
                                     BorderRadius.circular(6),
-
                                 borderSide:
                                     const BorderSide(
                                   color: Color(0xFFD6DEE9),
                                 ),
                               ),
-
                               enabledBorder:
                                   OutlineInputBorder(
                                 borderRadius:
                                     BorderRadius.circular(6),
-
                                 borderSide:
                                     const BorderSide(
                                   color: Color(0xFFD6DEE9),
                                 ),
                               ),
-
                               focusedBorder:
                                   OutlineInputBorder(
                                 borderRadius:
                                     BorderRadius.circular(6),
-
                                 borderSide:
                                     const BorderSide(
                                   color: Color(0xFF2455D6),
@@ -391,35 +450,42 @@ class _LoginScreenVolunteerState extends State<LoginScreenVolunteer> {
                           SizedBox(
                             width: double.infinity,
                             height: 37,
-
                             child: ElevatedButton(
-                              onPressed: _login,
-
+                              onPressed:
+                                  _isLoading ? null : _login,
                               style:
                                   ElevatedButton.styleFrom(
                                 backgroundColor:
                                     const Color(0xFF2455D6),
-
                                 foregroundColor:
                                     Colors.white,
-
+                                disabledBackgroundColor:
+                                    const Color(0xFF9FB4E8),
                                 elevation: 0,
-
                                 shape:
                                     RoundedRectangleBorder(
                                   borderRadius:
                                       BorderRadius.circular(6),
                                 ),
                               ),
-
-                              child: const Text(
-                                'Log in',
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  fontWeight:
-                                      FontWeight.w700,
-                                ),
-                              ),
+                              child: _isLoading
+                                  ? const SizedBox(
+                                      width: 17,
+                                      height: 17,
+                                      child:
+                                          CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        color: Colors.white,
+                                      ),
+                                    )
+                                  : const Text(
+                                      'Log in',
+                                      style: TextStyle(
+                                        fontSize: 13,
+                                        fontWeight:
+                                            FontWeight.w700,
+                                      ),
+                                    ),
                             ),
                           ),
 
@@ -433,20 +499,17 @@ class _LoginScreenVolunteerState extends State<LoginScreenVolunteer> {
                             child: Wrap(
                               alignment:
                                   WrapAlignment.center,
-
                               children: [
-                                // ------------------------------------------------
-                                // REGISTER AS VOLUNTEER
-                                // ------------------------------------------------
-
                                 TextButton(
-                                  onPressed: () {
-                                    Navigator.pushNamed(
-                                      context,
-                                      AppRoutes.volunteerSignup,
-                                    );
-                                  },
-
+                                  onPressed: _isLoading
+                                      ? null
+                                      : () {
+                                          Navigator.pushNamed(
+                                            context,
+                                            AppRoutes
+                                                .volunteerSignup,
+                                          );
+                                        },
                                   style:
                                       TextButton.styleFrom(
                                     padding: EdgeInsets.zero,
@@ -455,7 +518,6 @@ class _LoginScreenVolunteerState extends State<LoginScreenVolunteer> {
                                         MaterialTapTargetSize
                                             .shrinkWrap,
                                   ),
-
                                   child: const Text(
                                     'Register as a volunteer',
                                     style: TextStyle(
@@ -476,18 +538,15 @@ class _LoginScreenVolunteerState extends State<LoginScreenVolunteer> {
                                   ),
                                 ),
 
-                                // ------------------------------------------------
-                                // STAFF LOGIN
-                                // ------------------------------------------------
-
                                 TextButton(
-                                  onPressed: () {
-                                    Navigator.pushNamed(
-                                      context,
-                                      AppRoutes.adminLogin,
-                                    );
-                                  },
-
+                                  onPressed: _isLoading
+                                      ? null
+                                      : () {
+                                          Navigator.pushNamed(
+                                            context,
+                                            AppRoutes.adminLogin,
+                                          );
+                                        },
                                   style:
                                       TextButton.styleFrom(
                                     padding: EdgeInsets.zero,
@@ -496,7 +555,6 @@ class _LoginScreenVolunteerState extends State<LoginScreenVolunteer> {
                                         MaterialTapTargetSize
                                             .shrinkWrap,
                                   ),
-
                                   child: const Text(
                                     'Staff login',
                                     style: TextStyle(
@@ -526,7 +584,6 @@ class _LoginScreenVolunteerState extends State<LoginScreenVolunteer> {
             Container(
               height: 35,
               width: double.infinity,
-
               decoration: const BoxDecoration(
                 border: Border(
                   top: BorderSide(
@@ -534,17 +591,14 @@ class _LoginScreenVolunteerState extends State<LoginScreenVolunteer> {
                   ),
                 ),
               ),
-
               child: Padding(
                 padding:
                     const EdgeInsets.symmetric(
                   horizontal: 92,
                 ),
-
                 child: Row(
                   mainAxisAlignment:
                       MainAxisAlignment.spaceBetween,
-
                   children: const [
                     Text(
                       'FLOOD AND EARTHQUAKE SCORES ARE NEVER BLENDED',
@@ -555,7 +609,6 @@ class _LoginScreenVolunteerState extends State<LoginScreenVolunteer> {
                         letterSpacing: 1.5,
                       ),
                     ),
-
                     Text(
                       'LIVE API: FLOOD RISK · COMMUNITY REPORT ANALYZE',
                       style: TextStyle(
@@ -575,3 +628,4 @@ class _LoginScreenVolunteerState extends State<LoginScreenVolunteer> {
     );
   }
 }
+
