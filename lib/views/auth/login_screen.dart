@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
+import '../../controllers/auth_controller.dart';
+import '../../models/Auth_and_User_Models.dart';
+import '../../core/services/auth_service.dart';
 import '../../routes/app_routes.dart';
+import 'otp_verification_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -13,6 +17,8 @@ class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController _passwordController = TextEditingController();
 
   bool _obscurePassword = true;
+  bool _isLoading = false;
+  final AuthController _authController = AuthController();
 
   @override
   void dispose() {
@@ -21,24 +27,78 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
-  void _login() {
-    final email = _emailController.text.trim();
+  Future<void> _login() async {
+    final identifier = _emailController.text.trim();
     final password = _passwordController.text;
 
-    if (email.isEmpty || password.isEmpty) {
+    if (identifier.isEmpty || password.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text(
-            'Please enter your email/phone and password.',
-          ),
+          content: Text('Please enter your email/phone and password.'),
         ),
       );
       return;
     }
 
-    // TODO:
-    // Connect this later to:
-    // POST /auth/login
+    if (_isLoading) return;
+
+    setState(() => _isLoading = true);
+
+    try {
+      final result = await _authController.login(
+        identifier: identifier,
+        password: password,
+      );
+
+      if (!mounted) return;
+
+      if (result is OTPRequiredResponse) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => OtpVerificationScreen(
+              userId: result.userId,
+              email: result.email,
+              successRoute: AppRoutes.map,
+            ),
+          ),
+        );
+        return;
+      }
+
+      // AuthController already saved the JWT. This flag is used by the
+      // current protected routes until the app is fully restored on startup.
+      AuthService.login();
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Login successful.')),
+      );
+
+      Navigator.pushNamedAndRemoveUntil(
+        context,
+        AppRoutes.map,
+        (route) => false,
+      );
+    } catch (e) {
+      if (!mounted) return;
+
+      final errorText = e.toString();
+      var message = 'Login failed. Please try again.';
+
+      if (errorText.contains('401')) {
+        message = 'Invalid email/phone or password.';
+      } else if (errorText.contains('403')) {
+        message = 'This account is not allowed to sign in.';
+      } else if (errorText.contains('SocketException')) {
+        message = 'Cannot connect to MONJED server.';
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(message)),
+      );
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
   }
 
   @override
@@ -286,13 +346,22 @@ class _LoginScreenState extends State<LoginScreen> {
                                   borderRadius: BorderRadius.circular(6),
                                 ),
                               ),
-                              child: const Text(
-                                'Log in',
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
+                              child: _isLoading
+                                  ? const SizedBox(
+                                      width: 18,
+                                      height: 18,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                      ),
+                                    )
+                                  : const Text(
+                                      'Log in',
+                                      style: TextStyle(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
                             ),
                           ),
 

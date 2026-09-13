@@ -4,6 +4,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../../controllers/auth_controller.dart';
+import '../../core/services/auth_service.dart';
 
 class OtpVerificationScreen extends StatefulWidget {
   final String userId;
@@ -122,6 +123,8 @@ final AuthController _authController = AuthController();
       userId: widget.userId,
       code: code,
     );
+
+    AuthService.login();
 
     if (!mounted) return;
 
