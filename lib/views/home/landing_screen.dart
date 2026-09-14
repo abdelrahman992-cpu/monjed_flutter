@@ -4,6 +4,7 @@ import 'dart:math' as math;
 import '../../models/country_risk.dart';
 import 'package:flutter/material.dart';
 import '../../services/api_service.dart';
+import '../../core/services/auth_service.dart';
 
 class LandingScreen extends StatefulWidget {
   const LandingScreen({super.key});
@@ -277,6 +278,12 @@ _navButton(
   },
 ),
 
+  if (AuthService.isLoggedIn)
+    _navButton(
+      'Log out',
+      () => _logout(context),
+    ),
+
   const SizedBox(width: 18),
 
   IconButton(
@@ -319,6 +326,7 @@ _navButton(
                         _mobileNav('About us'),
                         _mobileNav('Contact us'),
                         _mobileNav('Volunteer'),
+                        if (AuthService.isLoggedIn) _mobileNav('Log out'),
                         _mobileNav('Open live map'),
                       ],
                     ),
@@ -334,6 +342,54 @@ _navButton(
       ),
     );
   }
+Future<void> _openVolunteer() async {
+  // المستخدم غير مسجل دخول
+  if (!AuthService.isLoggedIn) {
+    if (!mounted) return;
+
+    Navigator.pushNamed(
+      context,
+      AppRoutes.volunteerLogin,
+    );
+
+    return;
+  }
+
+  // المستخدم مسجل دخول، نتحقق من الـ role
+  final role = await AuthService.getRole();
+
+  if (!mounted) return;
+
+  if (role == 'volunteer') {
+    Navigator.pushNamed(
+      context,
+      AppRoutes.volunteer,
+    );
+  } else {
+    // مستخدم عادي أو role مختلف
+    Navigator.pushNamed(
+      context,
+      AppRoutes.volunteerLogin,
+    );
+  }
+}
+  Future<void> _logout(BuildContext context) async {
+    try {
+      await ApiService().logout();
+    } catch (_) {
+      // Clear the local session even if the server is unavailable.
+    }
+
+    AuthService.logout();
+
+    if (!mounted) return;
+
+    Navigator.pushNamedAndRemoveUntil(
+      context,
+      AppRoutes.home,
+      (route) => false,
+    );
+  }
 
   Widget _mobileNav(String text) {
   return ListTile(
@@ -345,6 +401,11 @@ _navButton(
     ),
     onTap: () {
       Navigator.pop(context);
+
+      if (text == 'Log out') {
+        _logout(context);
+        return;
+      }
 
       if (text == 'Volunteer') {
         Navigator.pushNamed(

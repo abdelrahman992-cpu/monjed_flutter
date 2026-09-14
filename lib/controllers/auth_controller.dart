@@ -1,5 +1,6 @@
 import '../models/Auth_and_User_Models.dart';
 import '../services/api_service.dart';
+import '../core/services/auth_service.dart';
 
 class AuthController {
   final ApiService api = ApiService();
@@ -130,25 +131,34 @@ class AuthController {
   // ==========================================================
 
   Future<void> _saveAuthentication(
-    AuthResponse authResponse,
-  ) async {
-    // Save JWT
-    await api.saveToken(
-      authResponse.accessToken,
-    );
+  AuthResponse authResponse,
+) async {
+  // Save JWT
+  await api.saveToken(
+    authResponse.accessToken,
+  );
 
-    // Save user information
-    await api.saveUserData(
-      userId: authResponse.user.userId,
-      role: authResponse.user.role,
-      displayName: authResponse.user.displayName ?? '',
-      email: authResponse.user.email ?? '',
-      phone: authResponse.user.phone,
-      zoneId: authResponse.user.zoneId,
-      country: authResponse.user.country,
-    );
+  // Save user information
+  await api.saveUserData(
+    userId: authResponse.user.userId,
+    role: authResponse.user.role,
+    displayName: authResponse.user.displayName ?? '',
+    email: authResponse.user.email ?? '',
+    phone: authResponse.user.phone,
+    zoneId: authResponse.user.zoneId,
+    country: authResponse.user.country,
+  );
+
+  // Save session
+  await AuthService.login();
+
+  // Save role for navigation
+  final role = authResponse.user.role.trim().toLowerCase();
+
+  if (role.isNotEmpty) {
+    await AuthService.setRole(role);
   }
-
+}
   // ==========================================================
   // LOGOUT
   // ==========================================================

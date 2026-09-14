@@ -4,6 +4,7 @@ import '../../models/Auth_and_User_Models.dart';
 import '../../controllers/auth_controller.dart';
 import '../../routes/app_routes.dart';
 import 'otp_verification_screen.dart';
+import '../../core/services/auth_service.dart';
 
 class LoginScreenVolunteer extends StatefulWidget {
   const LoginScreenVolunteer({super.key});
@@ -82,6 +83,8 @@ class _LoginScreenVolunteerState extends State<LoginScreenVolunteer> {
       // ==========================================================
       // DIRECT LOGIN
       // ==========================================================
+
+
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(

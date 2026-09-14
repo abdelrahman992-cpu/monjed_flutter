@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
+import '../../routes/app_routes.dart';
 import '../../controllers/auth_controller.dart';
 import '../../models/Auth_and_User_Models.dart';
-import '../../core/services/auth_service.dart';
-import '../../routes/app_routes.dart';
 import 'otp_verification_screen.dart';
+import '../../core/services/auth_service.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -33,15 +33,12 @@ class _LoginScreenState extends State<LoginScreen> {
 
     if (identifier.isEmpty || password.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please enter your email/phone and password.'),
-        ),
+        const SnackBar(content: Text('Please enter your email/phone and password.')),
       );
       return;
     }
 
     if (_isLoading) return;
-
     setState(() => _isLoading = true);
 
     try {
@@ -66,33 +63,25 @@ class _LoginScreenState extends State<LoginScreen> {
         return;
       }
 
-      // AuthController already saved the JWT. This flag is used by the
-      // current protected routes until the app is fully restored on startup.
-      AuthService.login();
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Login successful.')),
-      );
-
-      Navigator.pushNamedAndRemoveUntil(
-        context,
-        AppRoutes.map,
-        (route) => false,
-      );
-    } catch (e) {
-      if (!mounted) return;
-
-      final errorText = e.toString();
-      var message = 'Login failed. Please try again.';
-
-      if (errorText.contains('401')) {
-        message = 'Invalid email/phone or password.';
-      } else if (errorText.contains('403')) {
-        message = 'This account is not allowed to sign in.';
-      } else if (errorText.contains('SocketException')) {
-        message = 'Cannot connect to MONJED server.';
+      if (result is AuthResponse) {
+        
+        Navigator.pushNamedAndRemoveUntil(
+          context,
+          AppRoutes.map,
+          (route) => false,
+        );
+        return;
       }
 
+      throw Exception('Unexpected login response.');
+    } catch (e) {
+      if (!mounted) return;
+      var message = e.toString().replaceFirst('Exception: ', '');
+      if (message.contains('SocketException')) {
+        message = 'Cannot connect to MONJED server.';
+      } else if (message.isEmpty) {
+        message = 'Login failed. Please try again.';
+      }
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(message)),
       );
@@ -347,21 +336,14 @@ class _LoginScreenState extends State<LoginScreen> {
                                 ),
                               ),
                               child: _isLoading
-                                  ? const SizedBox(
-                                      width: 18,
-                                      height: 18,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2,
-                                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                                      ),
-                                    )
+                                  ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
                                   : const Text(
-                                      'Log in',
-                                      style: TextStyle(
-                                        fontSize: 13,
-                                        fontWeight: FontWeight.w700,
-                                      ),
-                                    ),
+                                'Log in',
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
                             ),
                           ),
 

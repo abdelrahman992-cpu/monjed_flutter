@@ -28,10 +28,14 @@ class ApiService {
   // HEADERS
   // ============================================================
 
-  Map<String, String> get _headers => {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-      };
+  Future<Map<String, String>> _authHeaders() async {
+    final token = await getToken();
+    return {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+      if (token != null && token.isNotEmpty) 'Authorization': 'Bearer $token',
+    };
+  }
 
   // ============================================================
   // GET
@@ -40,7 +44,7 @@ class ApiService {
   Future<dynamic> get(String endpoint) async {
     final response = await http.get(
       Uri.parse('$baseUrl$endpoint'),
-      headers: _headers,
+      headers: await _authHeaders(),
     );
 
     return _handleResponse(response);
@@ -56,7 +60,7 @@ class ApiService {
   }) async {
     final response = await http.post(
       Uri.parse('$baseUrl$endpoint'),
-      headers: _headers,
+      headers: await _authHeaders(),
       body: body == null ? null : jsonEncode(body),
     );
 
@@ -73,7 +77,7 @@ class ApiService {
   }) async {
     final response = await http.put(
       Uri.parse('$baseUrl$endpoint'),
-      headers: _headers,
+      headers: await _authHeaders(),
       body: body == null ? null : jsonEncode(body),
     );
 
@@ -90,7 +94,7 @@ class ApiService {
   }) async {
     final response = await http.patch(
       Uri.parse('$baseUrl$endpoint'),
-      headers: _headers,
+      headers: await _authHeaders(),
       body: body == null ? null : jsonEncode(body),
     );
 
@@ -104,7 +108,7 @@ class ApiService {
   Future<dynamic> delete(String endpoint) async {
     final response = await http.delete(
       Uri.parse('$baseUrl$endpoint'),
-      headers: _headers,
+      headers: await _authHeaders(),
     );
 
     return _handleResponse(response);
