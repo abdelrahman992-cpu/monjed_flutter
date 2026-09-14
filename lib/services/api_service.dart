@@ -195,6 +195,40 @@ class ApiService {
   }
 
   // ============================================================
+  // SAVED USER DATA
+  // ============================================================
+
+  Future<String?> getUserId() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_userIdKey);
+  }
+
+  Future<String?> getUserRole() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_roleKey);
+  }
+
+  Future<String?> getDisplayName() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_displayNameKey);
+  }
+
+  Future<String?> getUserEmail() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_emailKey);
+  }
+
+  Future<String?> getZoneId() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_zoneIdKey);
+  }
+
+  Future<String?> getCountry() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_countryKey);
+  }
+
+  // ============================================================
   // LOGOUT
   // ============================================================
 

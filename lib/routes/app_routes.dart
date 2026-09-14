@@ -17,6 +17,7 @@ import '../views/dashboard/volunteer_dashboard_screen.dart';
 import '../views/not_found/not_found_screen.dart';
 import '../views/about/about.dart';
 import '../views/auth/signup_screen.dart';
+import '../views/profile/update_profile_screen.dart';
 
 
 class AppRoutes {
@@ -37,6 +38,7 @@ class AppRoutes {
   static const String signup = '/signup';
   static const String volunteerLogin = '/volunteer-login';
 static const String volunteerSignup = '/volunteer-signup';
+  static const String updateProfile = '/update-profile';
 
 
   static Route<dynamic> generateRoute(RouteSettings settings) {
@@ -123,6 +125,11 @@ case volunteerSignup:
   return MaterialPageRoute(
     builder: (_) => const SignUpScreenVolunteer(),
   );
+
+      case updateProfile:
+        return MaterialPageRoute(
+          builder: (_) => const UpdateProfileScreen(),
+        );
       // ============================================================
       // CONTACT
       // ============================================================

@@ -270,12 +270,7 @@ Future<void> _loadCountries() async {
 
 _navButton(
   'volunteer',
-  () {
-    Navigator.pushNamed(
-      context,
-      AppRoutes.volunteerLogin,
-    );
-  },
+  _openVolunteer,
 ),
 
   if (AuthService.isLoggedIn)
@@ -342,37 +337,42 @@ _navButton(
       ),
     );
   }
-Future<void> _openVolunteer() async {
-  // المستخدم غير مسجل دخول
-  if (!AuthService.isLoggedIn) {
+
+  Future<void> _openVolunteer() async {
+    // Do not rely only on the in-memory flag. Home can be rebuilt after
+    // navigation and the persisted token is the real source of truth.
+    final api = ApiService();
+    final token = await api.getToken();
+    final role = (await AuthService.getRole() ?? await api.getUserRole() ?? '')
+        .trim()
+        .toLowerCase();
+
     if (!mounted) return;
 
-    Navigator.pushNamed(
-      context,
-      AppRoutes.volunteerLogin,
-    );
+    final loggedIn = token != null && token.isNotEmpty;
+    if (!loggedIn) {
+      Navigator.pushNamed(context, AppRoutes.volunteerLogin);
+      return;
+    }
 
-    return;
+    // Restore the in-memory session if Home was recreated.
+    if (!AuthService.isLoggedIn) {
+      await AuthService.login();
+    }
+
+    if (!mounted) return;
+
+    if (role == 'volunteer' || role == 'responder') {
+      Navigator.pushNamedAndRemoveUntil(
+        context,
+        AppRoutes.volunteer,
+        (route) => false,
+      );
+    } else {
+      Navigator.pushNamed(context, AppRoutes.volunteerLogin);
+    }
   }
 
-  // المستخدم مسجل دخول، نتحقق من الـ role
-  final role = await AuthService.getRole();
-
-  if (!mounted) return;
-
-  if (role == 'volunteer') {
-    Navigator.pushNamed(
-      context,
-      AppRoutes.volunteer,
-    );
-  } else {
-    // مستخدم عادي أو role مختلف
-    Navigator.pushNamed(
-      context,
-      AppRoutes.volunteerLogin,
-    );
-  }
-}
   Future<void> _logout(BuildContext context) async {
     try {
       await ApiService().logout();
@@ -380,7 +380,7 @@ Future<void> _openVolunteer() async {
       // Clear the local session even if the server is unavailable.
     }
 
-    AuthService.logout();
+    await AuthService.logout();
 
     if (!mounted) return;
 
@@ -408,10 +408,7 @@ Future<void> _openVolunteer() async {
       }
 
       if (text == 'Volunteer') {
-        Navigator.pushNamed(
-          context,
-          AppRoutes.volunteerLogin,
-        );
+        _openVolunteer();
         return;
       }
 
@@ -1767,12 +1764,7 @@ Widget _reasons(CountryRisk country) {
                   'WANT TO HELP',
                   'Join the volunteer response network.',
                   Icons.volunteer_activism,
-                  () {
-  Navigator.pushNamed(
-    context,
-    AppRoutes.volunteer,
-  );
-},
+                  _openVolunteer,
                 ),
               ],
             )
@@ -1797,12 +1789,7 @@ Widget _reasons(CountryRisk country) {
                     'WANT TO HELP',
                     'Join the volunteer response network.',
                     Icons.volunteer_activism,
-                    () {
-  Navigator.pushNamed(
-    context,
-    AppRoutes.volunteer,
-  );
-},
+                    _openVolunteer,
                   ),
                 ),
               ],
