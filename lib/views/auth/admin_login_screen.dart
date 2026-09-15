@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
-import '../../repositories/auth_repository.dart';
-import '../../services/api_service.dart';
-import '../../core/services/auth_service.dart';
-import '../../widgets/monjed_ui.dart';
+
+import '../../controllers/auth_controller.dart';
+import '../../models/Auth_and_User_Models.dart';
 import '../../routes/app_routes.dart';
+import '../../widgets/monjed_ui.dart';
+import 'otp_verification_screen.dart';
 
 class AdminLoginScreen extends StatefulWidget {
   const AdminLoginScreen({super.key});
@@ -15,8 +16,10 @@ class AdminLoginScreen extends StatefulWidget {
 class _AdminLoginScreenState extends State<AdminLoginScreen> {
   final _id = TextEditingController();
   final _pw = TextEditingController();
+
+  final AuthController _authController = AuthController();
+
   bool _busy = false;
-  final _repo = AuthRepository(apiService: ApiService());
 
   @override
   void dispose() {
@@ -26,42 +29,90 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
   }
 
   Future<void> _login() async {
-    if (_id.text.trim().isEmpty || _pw.text.isEmpty) return;
+    final identifier = _id.text.trim();
+    final password = _pw.text;
 
-    setState(() => _busy = true);
-    try {
-      final r = await _repo.adminLogin(
-        identifier: _id.text.trim(),
-        password: _pw.text,
+    if (identifier.isEmpty || password.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please enter your email/phone and password.'),
+        ),
       );
+      return;
+    }
 
-      final api = ApiService();
-      await api.saveToken(r.accessToken);
-      await api.saveUserData(
-        userId: r.user.userId,
-        role: r.user.role,
-        displayName: r.user.displayName ?? 'Admin',
-        email: r.user.email ?? '',
-        phone: r.user.phone,
-        zoneId: r.user.zoneId,
-        country: r.user.country,
+    if (_busy) return;
+
+    setState(() {
+      _busy = true;
+    });
+
+    try {
+      final result = await _authController.login(
+        identifier: identifier,
+        password: password,
       );
 
       if (!mounted) return;
-      AuthService.login();
 
-      Navigator.pushNamedAndRemoveUntil(
-        context,
-        AppRoutes.admin,
-        (_) => false,
-      );
+      // ==========================================================
+      // OTP REQUIRED
+      // ==========================================================
+
+      if (result is OTPRequiredResponse) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => OtpVerificationScreen(
+              userId: result.userId,
+              email: result.email,
+              successRoute: AppRoutes.admin,
+            ),
+          ),
+        );
+
+        return;
+      }
+
+      // ==========================================================
+      // DIRECT LOGIN
+      // ==========================================================
+
+      if (result is AuthResponse) {
+        Navigator.pushNamedAndRemoveUntil(
+          context,
+          AppRoutes.admin,
+          (_) => false,
+        );
+
+        return;
+      }
+
+      throw Exception('Unexpected login response.');
     } catch (e) {
       if (!mounted) return;
+
+      var message = e.toString().replaceFirst('Exception: ', '');
+
+      if (message.contains('401')) {
+        message = 'Invalid email/phone or password.';
+      } else if (message.contains('403')) {
+        message = 'This account does not have admin access.';
+      } else if (message.contains('SocketException')) {
+        message = 'Cannot connect to MONJED server.';
+      }
+
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.toString())),
+        SnackBar(
+          content: Text(message),
+        ),
       );
     } finally {
-      if (mounted) setState(() => _busy = false);
+      if (mounted) {
+        setState(() {
+          _busy = false;
+        });
+      }
     }
   }
 
@@ -88,7 +139,9 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
                         letterSpacing: 2.2,
                       ),
                     ),
+
                     const SizedBox(height: 10),
+
                     const Text(
                       'Admin login',
                       style: TextStyle(
@@ -96,7 +149,9 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
                         fontWeight: FontWeight.w800,
                       ),
                     ),
+
                     const SizedBox(height: 7),
+
                     const Text(
                       'Sign in to manage MONJED operations, reports and response requests.',
                       style: TextStyle(
@@ -105,7 +160,9 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
                         height: 1.5,
                       ),
                     ),
+
                     const SizedBox(height: 25),
+
                     const Text(
                       'Email or phone',
                       style: TextStyle(
@@ -115,12 +172,17 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
                         letterSpacing: 1.1,
                       ),
                     ),
+
                     const SizedBox(height: 7),
+
                     TextField(
                       controller: _id,
+                      enabled: !_busy,
                       decoration: monjedInput('admin@example.com'),
                     ),
+
                     const SizedBox(height: 15),
+
                     const Text(
                       'Password',
                       style: TextStyle(
@@ -130,13 +192,18 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
                         letterSpacing: 1.1,
                       ),
                     ),
+
                     const SizedBox(height: 7),
+
                     TextField(
                       controller: _pw,
+                      enabled: !_busy,
                       obscureText: true,
                       decoration: monjedInput('Password'),
                     ),
+
                     const SizedBox(height: 20),
+
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton(
@@ -144,7 +211,9 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
                         style: ElevatedButton.styleFrom(
                           backgroundColor: MonjedColors.blue,
                           foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 15),
+                          padding: const EdgeInsets.symmetric(
+                            vertical: 15,
+                          ),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(7),
                           ),
@@ -161,7 +230,9 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
                             : const Text('Log in as admin'),
                       ),
                     ),
+
                     const SizedBox(height: 12),
+
                     SizedBox(
                       width: double.infinity,
                       child: OutlinedButton.icon(
@@ -171,12 +242,18 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
                                   context,
                                   AppRoutes.volunteerLogin,
                                 ),
-                        icon: const Icon(Icons.volunteer_activism_outlined),
+                        icon: const Icon(
+                          Icons.volunteer_activism_outlined,
+                        ),
                         label: const Text('Volunteer login'),
                         style: OutlinedButton.styleFrom(
                           foregroundColor: MonjedColors.blue,
-                          side: const BorderSide(color: MonjedColors.line),
-                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          side: const BorderSide(
+                            color: MonjedColors.line,
+                          ),
+                          padding: const EdgeInsets.symmetric(
+                            vertical: 14,
+                          ),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(7),
                           ),

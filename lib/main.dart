@@ -1,8 +1,13 @@
 import 'package:flutter/material.dart';
-
 import 'routes/app_routes.dart';
+import 'core/services/auth_service.dart';
 
-void main() {
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // استرجاع حالة تسجيل الدخول المحفوظة
+  await AuthService.initialize();
+
   runApp(const MonjedApp());
 }
 
