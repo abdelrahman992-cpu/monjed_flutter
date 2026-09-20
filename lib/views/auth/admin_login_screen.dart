@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 
 import '../../controllers/auth_controller.dart';
 import '../../models/Auth_and_User_Models.dart';
-import '../../routes/app_routes.dart';
+import '../../core/services/auth_service.dart';
 import '../../widgets/monjed_ui.dart';
+import '../../routes/app_routes.dart';
 import 'otp_verification_screen.dart';
 
 class AdminLoginScreen extends StatefulWidget {
@@ -43,12 +44,10 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
 
     if (_busy) return;
 
-    setState(() {
-      _busy = true;
-    });
+    setState(() => _busy = true);
 
     try {
-      final result = await _authController.login(
+      final result = await _authController.adminLogin(
         identifier: identifier,
         password: password,
       );
@@ -60,6 +59,12 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
       // ==========================================================
 
       if (result is OTPRequiredResponse) {
+        if (result.userId.isEmpty) {
+          throw Exception(
+            'Server did not return a user ID for OTP verification.',
+          );
+        }
+
         Navigator.push(
           context,
           MaterialPageRoute(
@@ -79,6 +84,8 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
       // ==========================================================
 
       if (result is AuthResponse) {
+        AuthService.login();
+
         Navigator.pushNamedAndRemoveUntil(
           context,
           AppRoutes.admin,
@@ -88,7 +95,7 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
         return;
       }
 
-      throw Exception('Unexpected login response.');
+      throw Exception('Unexpected admin login response.');
     } catch (e) {
       if (!mounted) return;
 
@@ -109,9 +116,7 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
       );
     } finally {
       if (mounted) {
-        setState(() {
-          _busy = false;
-        });
+        setState(() => _busy = false);
       }
     }
   }
@@ -139,9 +144,7 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
                         letterSpacing: 2.2,
                       ),
                     ),
-
                     const SizedBox(height: 10),
-
                     const Text(
                       'Admin login',
                       style: TextStyle(
@@ -149,9 +152,7 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
                         fontWeight: FontWeight.w800,
                       ),
                     ),
-
                     const SizedBox(height: 7),
-
                     const Text(
                       'Sign in to manage MONJED operations, reports and response requests.',
                       style: TextStyle(
@@ -160,9 +161,7 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
                         height: 1.5,
                       ),
                     ),
-
                     const SizedBox(height: 25),
-
                     const Text(
                       'Email or phone',
                       style: TextStyle(
@@ -172,17 +171,13 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
                         letterSpacing: 1.1,
                       ),
                     ),
-
                     const SizedBox(height: 7),
-
                     TextField(
                       controller: _id,
                       enabled: !_busy,
                       decoration: monjedInput('admin@example.com'),
                     ),
-
                     const SizedBox(height: 15),
-
                     const Text(
                       'Password',
                       style: TextStyle(
@@ -192,18 +187,14 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
                         letterSpacing: 1.1,
                       ),
                     ),
-
                     const SizedBox(height: 7),
-
                     TextField(
                       controller: _pw,
                       enabled: !_busy,
                       obscureText: true,
                       decoration: monjedInput('Password'),
                     ),
-
                     const SizedBox(height: 20),
-
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton(
@@ -230,9 +221,7 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
                             : const Text('Log in as admin'),
                       ),
                     ),
-
                     const SizedBox(height: 12),
-
                     SizedBox(
                       width: double.infinity,
                       child: OutlinedButton.icon(

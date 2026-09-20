@@ -97,7 +97,44 @@ class AuthController {
 
     return response;
   }
+// ==========================================================
+// ADMIN LOGIN
+// POST /auth/admin
+// ==========================================================
 
+Future<dynamic> adminLogin({
+  required String identifier,
+  required String password,
+}) async {
+  final response = await api.post(
+    '/auth/admin',
+    body: {
+      'identifier': identifier,
+      'password': password,
+    },
+  );
+
+  final json = Map<String, dynamic>.from(response);
+
+  // Backend requires OTP
+  if (json['requires_otp'] == true) {
+    return OTPRequiredResponse.fromJson(json);
+  }
+
+  // In case backend ever returns a direct authenticated response
+  if (json['access_token'] != null) {
+    final authResponse = AuthResponse.fromJson(json);
+
+    await _saveAuthentication(authResponse);
+
+    return authResponse;
+  }
+
+  throw Exception(
+    json['message']?.toString() ??
+        'Unexpected admin login response.',
+  );
+}
   // ==========================================================
   // VERIFY OTP
   // ==========================================================
